@@ -1,0 +1,13 @@
+export const routes = [
+  { path: '/', label: '首页仪表盘', key: 'dashboard' },
+  { path: '/customers', label: '客户管理', key: 'customers' },
+  { path: '/projects', label: '客户项目', key: 'projects' },
+  { path: '/contracts', label: '合同管理', key: 'contracts' },
+  { path: '/employees', label: '员工管理', key: 'employees' },
+  { path: '/finance', label: '财务管理', key: 'finance' },
+  { path: '/accounts', label: '账户管理', key: 'accounts' },
+  { path: '/reports', label: '报表对账', key: 'reports' },
+  { path: '/settings', label: '系统设置', key: 'settings' },
+] as const;
+
+export type RouteKey = (typeof routes)[number]['key'];
