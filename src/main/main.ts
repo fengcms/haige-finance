@@ -5,8 +5,10 @@ import { closeDatabase } from './db/index.js';
 import { migrateDatabase } from './db/migrate.js';
 import { seedDatabase } from './db/seed.js';
 import { registerAppIpc } from './ipc/appIpc.js';
+import { registerMaintenanceIpc } from './ipc/maintenanceIpc.js';
 import { registerMasterDataIpc } from './ipc/masterDataIpc.js';
 import { registerProjectStatsIpc } from './ipc/projectStatsIpc.js';
+import { registerReportIpc } from './ipc/reportIpc.js';
 import { registerTransactionIpc } from './ipc/transactionIpc.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -36,10 +38,10 @@ function createWindow() {
     mainWindow.webContents.once('did-finish-load', () => {
       void mainWindow.webContents
         .executeJavaScript(
-          'Boolean(window.haige && window.haige.appPing && window.haige.transactions && window.haige.transactions.list && window.haige.projectStats && window.haige.projectStats.list)',
+          'window.haige ? { ok: Boolean(window.haige.version && window.haige.appPing && window.haige.transactions && window.haige.transactions.list && window.haige.projectStats && window.haige.projectStats.list && window.haige.reports && window.haige.reports.get && window.haige.maintenance && window.haige.maintenance.info), version: window.haige.version } : { ok: false, version: null }',
         )
-        .then((isPreloadReady) => {
-          console.log(`[preload] haige api ready: ${isPreloadReady}`);
+        .then((preloadStatus) => {
+          console.log(`[preload] haige api ready: ${preloadStatus.ok}, version: ${preloadStatus.version}`);
         })
         .catch((error: unknown) => {
           console.error('[preload] failed to verify haige api', error);
@@ -57,6 +59,8 @@ app.whenReady().then(() => {
   registerMasterDataIpc();
   registerTransactionIpc();
   registerProjectStatsIpc();
+  registerReportIpc();
+  registerMaintenanceIpc();
   createWindow();
 
   app.on('activate', () => {

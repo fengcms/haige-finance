@@ -795,17 +795,334 @@ pnpm project-stats:smoke-test
 
 ---
 
+## 阶段六：报表与对账
+
+### 阶段目标
+
+基于基础资料、财务流水和项目统计，完成第一版经营概览与核心报表。
+
+本阶段不做 Excel 导出、备份恢复和图表化展示，优先保证表格报表口径准确。
+
+### 已完成内容
+
+1. 新增报表 shared 类型：
+   - `ReportQuery`
+   - `DashboardReport`
+   - `MonthlyIncomeExpenseItem`
+   - `ProjectProfitReportItem`
+   - `CustomerReceivableReportItem`
+   - `AccountBalanceReportItem`
+   - `ReportBundle`
+2. 新增报表 Repository：
+   - 月度收支聚合
+   - 项目利润聚合
+   - 客户应收聚合
+   - 账户余额聚合
+3. 新增报表 Service：
+   - 计算月度收入
+   - 计算月度支出
+   - 计算月度收支差额
+   - 计算项目应收
+   - 计算项目当前毛利
+   - 计算项目预计毛利
+   - 计算客户应收
+   - 计算账户余额
+   - 计算首页仪表盘汇总
+4. 新增报表 IPC：
+   - `reports:get`
+5. preload 暴露报表 API：
+   - `window.haige.reports`
+6. 新增 renderer API：
+   - `reportApi`
+7. 首页仪表盘改为真实经营概览：
+   - 本月收入
+   - 本月支出
+   - 本月收支差额
+   - 账户总余额
+   - 项目应收合计
+   - 项目预计毛利合计
+   - 本地数据库状态
+8. 报表对账页面改为真实报表页：
+   - 月份筛选
+   - 月度收支表
+   - 项目利润表
+   - 客户应收表
+   - 账户余额表
+9. 新增报表冒烟测试脚本。
+10. 新增 pnpm script：
+   - `pnpm report:smoke-test`
+
+### 关键文件
+
+```text
+package.json
+
+src/shared/types/app.ts
+src/shared/types/report.ts
+
+src/main/ipc/reportIpc.ts
+src/main/main.ts
+src/main/repositories/reportRepository.ts
+src/main/services/reportService.ts
+
+src/preload/index.cjs
+
+src/renderer/api/reportApi.ts
+src/renderer/pages/DashboardPage.tsx
+src/renderer/pages/ReportsPage.tsx
+
+scripts/report-smoke-test.mjs
+```
+
+### 已验证命令
+
+```bash
+pnpm typecheck
+pnpm build
+pnpm report:smoke-test
+```
+
+### 验证结果
+
+1. TypeScript 类型检查通过。
+2. renderer 和 main 构建通过。
+3. 报表冒烟测试通过。
+4. 冒烟测试覆盖：
+   - 正常收入进入月度收支表
+   - 正常支出进入月度收支表
+   - 作废流水不进入报表
+   - 软删除流水不进入报表
+   - 项目合同金额统计
+   - 项目已收款统计
+   - 项目已支出统计
+   - 账户余额统计
+
+### 数据口径说明
+
+1. 报表流水统计统一排除：
+   - `transactions.status <> 'normal'`
+   - `transactions.deleted_at IS NOT NULL`
+2. 月度收支表和账户余额表只统计：
+   - `transactions.is_company_fund = 1`
+3. 项目利润表沿用阶段五项目统计口径：
+   - 客户收款计入项目已收款
+   - 影响项目利润的支出计入项目已支出
+4. 所有金额继续以整数分计算，页面显示为元。
+
+### 注意事项
+
+1. 报表页面当前以表格为主，暂未使用 Recharts 图表。
+2. 月度收支表当前展示所选月份向前 12 个月。
+3. 报表尚未支持 Excel 导出。
+4. 首页和报表页新增了 preload API，开发环境需要完全重启 `pnpm dev` 后生效。
+
+---
+
+## 阶段七：备份、导出与系统设置
+
+### 阶段目标
+
+补齐本地账务软件的数据安全和基础交付能力，支持手动备份 SQLite 数据库，并导出基础资料、流水和报表到 Excel。
+
+本阶段不实现自动恢复数据库，避免运行中替换 SQLite 文件造成数据损坏。
+
+### 已完成内容
+
+1. 新增维护 shared 类型：
+   - `MaintenanceInfo`
+   - `BackupResult`
+   - `ExportResult`
+2. 新增备份 Service：
+   - 查询数据库文件路径
+   - 查询备份目录
+   - 查询导出目录
+   - 手动备份 SQLite 数据库
+   - 返回备份文件路径
+3. 新增 Excel 导出 Service：
+   - 导出客户
+   - 导出项目
+   - 导出合同
+   - 导出财务流水
+   - 导出月度收支表
+   - 导出项目利润表
+   - 导出客户应收表
+   - 导出账户余额表
+4. 新增维护 IPC：
+   - `maintenance:info`
+   - `maintenance:backup-database`
+   - `maintenance:export-excel`
+5. preload 暴露维护 API：
+   - `window.haige.maintenance`
+6. 新增 renderer API：
+   - `maintenanceApi`
+7. 系统设置页面新增：
+   - 数据库文件路径展示
+   - 备份目录展示
+   - 导出目录展示
+   - 备份数据库按钮
+   - 导出 Excel 按钮
+   - 数据库恢复风险提示
+8. 保留系统设置中的收支分类维护。
+9. 新增备份冒烟测试脚本。
+10. 新增导出冒烟测试脚本。
+11. 新增 pnpm scripts：
+   - `pnpm backup:smoke-test`
+   - `pnpm export:smoke-test`
+
+### 关键文件
+
+```text
+package.json
+
+src/shared/types/app.ts
+src/shared/types/maintenance.ts
+
+src/main/backup/backupService.ts
+src/main/export/exportService.ts
+src/main/ipc/maintenanceIpc.ts
+src/main/main.ts
+
+src/preload/index.cjs
+
+src/renderer/api/maintenanceApi.ts
+src/renderer/pages/SettingsPage.tsx
+
+scripts/backup-smoke-test.mjs
+scripts/export-smoke-test.mjs
+```
+
+### 已验证命令
+
+```bash
+pnpm typecheck
+pnpm build
+pnpm backup:smoke-test
+pnpm export:smoke-test
+```
+
+### 验证结果
+
+1. TypeScript 类型检查通过。
+2. renderer 和 main 构建通过。
+3. 备份冒烟测试通过。
+4. 导出冒烟测试通过。
+5. 备份测试已生成 SQLite 备份文件。
+6. 导出测试已生成 Excel 文件，并验证关键工作表存在。
+
+### 数据口径说明
+
+1. 备份使用 SQLite backup 能力生成完整数据库备份。
+2. Excel 中金额字段统一导出为元。
+3. 财务流水导出包含正常、作废等未软删除流水，方便追溯；报表导出仍沿用报表口径排除作废和软删除流水。
+4. 备份目录和导出目录位于数据库文件同级目录下：
+   - `backups`
+   - `exports`
+
+### 注意事项
+
+1. 当前版本不支持自动恢复数据库。
+2. 恢复数据库需要关闭连接、替换文件、重启应用，后续应单独设计安全流程和二次确认。
+3. 设置页新增了 preload API，开发环境需要完全重启 `pnpm dev` 后生效。
+
+---
+
+## 阶段八：质量加固与打包前检查
+
+### 阶段目标
+
+建立 MVP 的完整验证安全网，补齐开发说明、用户手册和打包前计划，为后续试用和打包做准备。
+
+本阶段不新增业务模块，不直接引入打包工具。
+
+### 已完成内容
+
+1. 新增统一验证命令：
+   - `pnpm verify`
+2. `pnpm verify` 串行执行：
+   - `pnpm typecheck`
+   - `pnpm build`
+   - `pnpm db:init-test`
+   - `pnpm crud:smoke-test`
+   - `pnpm transaction:smoke-test`
+   - `pnpm project-stats:smoke-test`
+   - `pnpm report:smoke-test`
+   - `pnpm backup:smoke-test`
+   - `pnpm export:smoke-test`
+3. preload 增加版本号：
+   - `window.haige.version = '0.8.0'`
+4. Electron preload 自检日志增加版本输出：
+
+```text
+[preload] haige api ready: true, version: 0.8.0
+```
+
+5. 新增开发运行说明：
+   - `DEVELOPMENT_GUIDE.md`
+6. 新增用户操作手册草稿：
+   - `USER_GUIDE.md`
+7. 新增打包前计划：
+   - `PACKAGING_PLAN.md`
+8. 修复 `report-smoke-test` 重复运行时的测试数据污染问题：
+   - 报表测试月份改为每次运行生成隔离月份
+9. 保留 `README.md` 作为需求文档，不直接覆盖。
+
+### 关键文件
+
+```text
+package.json
+DEVELOPMENT_GUIDE.md
+USER_GUIDE.md
+PACKAGING_PLAN.md
+STAGE_SUMMARY.md
+
+src/preload/index.cjs
+src/shared/types/app.ts
+src/main/main.ts
+
+scripts/report-smoke-test.mjs
+```
+
+### 已验证命令
+
+```bash
+pnpm typecheck
+pnpm build
+pnpm report:smoke-test
+pnpm verify
+```
+
+### 验证结果
+
+1. TypeScript 类型检查通过。
+2. renderer 和 main 构建通过。
+3. 报表冒烟测试可重复运行。
+4. 完整验证 `pnpm verify` 通过。
+5. 完整验证覆盖：
+   - 数据库初始化
+   - 基础资料 CRUD
+   - 财务流水
+   - 项目统计
+   - 报表
+   - 数据库备份
+   - Excel 导出
+
+### 注意事项
+
+1. Vite 构建仍有包体积提示，不影响当前运行。
+2. 新增 preload 版本号后，开发环境仍需在 preload 改动后完全重启 `pnpm dev`。
+3. 打包工具尚未引入，后续应先确认应用名称、图标、平台和 better-sqlite3 打包策略。
+
+---
+
 ## 下一阶段建议
 
-阶段六建议进入“报表与对账”。
+下一步可以进入“Electron 打包配置与试用版交付”。
 
-推荐完成：
+推荐先完成：
 
-1. 首页仪表盘基础经营数据
-2. 项目利润表
-3. 客户应收表
-4. 月度收支表
-5. 账户余额表
-6. 报表 service 和 smoke test
-
-所有报表必须排除作废流水和软删除流水。
+1. 确认应用正式名称和图标。
+2. 选择打包工具。
+3. 配置 macOS 开发打包。
+4. 验证打包后 SQLite 数据库路径。
+5. 验证打包后备份和 Excel 导出。
+6. 验证打包后 better-sqlite3 正常加载。

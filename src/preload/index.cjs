@@ -1,5 +1,6 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
+const preloadVersion = '0.8.0';
 const invoke = (channel, payload) => ipcRenderer.invoke(channel, payload);
 const crudApi = (namespace) => ({
   list: (query) => invoke(`${namespace}:list`, query),
@@ -9,6 +10,7 @@ const crudApi = (namespace) => ({
 });
 
 contextBridge.exposeInMainWorld('haige', {
+  version: preloadVersion,
   appPing: () => ipcRenderer.invoke('app:ping'),
   invoke,
   customers: crudApi('customers'),
@@ -25,5 +27,13 @@ contextBridge.exposeInMainWorld('haige', {
   projectStats: {
     list: () => invoke('project-stats:list'),
     detail: (projectId) => invoke('project-stats:detail', { projectId }),
+  },
+  reports: {
+    get: (query) => invoke('reports:get', query),
+  },
+  maintenance: {
+    info: () => invoke('maintenance:info'),
+    backupDatabase: () => invoke('maintenance:backup-database'),
+    exportExcel: () => invoke('maintenance:export-excel'),
   },
 });

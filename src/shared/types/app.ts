@@ -4,8 +4,10 @@ import type { Category } from './category.js';
 import type { Contract } from './contract.js';
 import type { Customer } from './customer.js';
 import type { Employee } from './employee.js';
+import type { BackupResult, ExportResult, MaintenanceInfo } from './maintenance.js';
 import type { CustomerProject } from './project.js';
 import type { ProjectStatsDetail, ProjectStatsListItem } from './projectStats.js';
+import type { ReportBundle, ReportQuery } from './report.js';
 import type { AccountBalance, Transaction, TransactionListItem, TransactionListQuery } from './transaction.js';
 
 export interface PingResult {
@@ -19,6 +21,7 @@ export interface PingResult {
 }
 
 export interface HaigeApi {
+  version: string;
   appPing: () => Promise<PingResult>;
   invoke: <T>(channel: string, payload?: unknown) => Promise<ApiResult<T>>;
   customers: CrudApi<Customer>;
@@ -29,6 +32,8 @@ export interface HaigeApi {
   categories: CrudApi<Category>;
   transactions: TransactionApi;
   projectStats: ProjectStatsApi;
+  reports: ReportApi;
+  maintenance: MaintenanceApi;
 }
 
 export interface CrudApi<T> {
@@ -47,4 +52,14 @@ export interface TransactionApi extends CrudApi<Transaction> {
 export interface ProjectStatsApi {
   list: () => Promise<ApiResult<ProjectStatsListItem[]>>;
   detail: (projectId: string) => Promise<ApiResult<ProjectStatsDetail>>;
+}
+
+export interface ReportApi {
+  get: (query?: ReportQuery) => Promise<ApiResult<ReportBundle>>;
+}
+
+export interface MaintenanceApi {
+  info: () => Promise<ApiResult<MaintenanceInfo>>;
+  backupDatabase: () => Promise<ApiResult<BackupResult>>;
+  exportExcel: () => Promise<ApiResult<ExportResult>>;
 }
