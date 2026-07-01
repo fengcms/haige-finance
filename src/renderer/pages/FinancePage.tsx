@@ -94,11 +94,7 @@ export function FinancePage() {
     void load();
   }, []);
 
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
+  function syncTransactionFormValues() {
     if (editingItem) {
       form.setFieldsValue({
         ...editingItem,
@@ -116,7 +112,7 @@ export function FinancePage() {
       affectsReceivable: false,
       affectsProjectProfit: false,
     });
-  }, [open, editingItem, form]);
+  }
 
   function handleCreate() {
     setEditingItem(null);
@@ -311,6 +307,12 @@ export function FinancePage() {
         width={900}
         onOk={handleSubmit}
         onCancel={() => setOpen(false)}
+        afterOpenChange={(visible) => {
+          if (visible) {
+            syncTransactionFormValues();
+          }
+        }}
+        forceRender
         destroyOnHidden
       >
         <Form form={form} layout="vertical" preserve={false} className="transaction-form">

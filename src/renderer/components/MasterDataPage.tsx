@@ -66,17 +66,13 @@ export function MasterDataPage<T extends { id: string }>({
     void load('');
   }, []);
 
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
+  function syncFormValues() {
     if (editingItem) {
       form.setFieldsValue(normalizeBeforeEdit ? normalizeBeforeEdit(editingItem) : editingItem);
     } else {
       form.resetFields();
     }
-  }, [open, editingItem, form]);
+  }
 
   function handleCreate() {
     setEditingItem(null);
@@ -188,6 +184,12 @@ export function MasterDataPage<T extends { id: string }>({
         cancelText="取消"
         onOk={handleSubmit}
         onCancel={() => setOpen(false)}
+        afterOpenChange={(visible) => {
+          if (visible) {
+            syncFormValues();
+          }
+        }}
+        forceRender
         destroyOnHidden
       >
         <Form form={form} layout="vertical" preserve={false}>
