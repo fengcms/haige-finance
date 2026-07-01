@@ -1,6 +1,6 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
-const preloadVersion = '0.8.0';
+const preloadVersion = '0.11.0';
 const invoke = (channel, payload) => ipcRenderer.invoke(channel, payload);
 const crudApi = (namespace) => ({
   list: (query) => invoke(`${namespace}:list`, query),
@@ -16,6 +16,16 @@ contextBridge.exposeInMainWorld('haige', {
   customers: crudApi('customers'),
   projects: crudApi('projects'),
   contracts: crudApi('contracts'),
+  contractAttachments: {
+    list: (contractId) => invoke('contract-attachments:list', contractId),
+    importFiles: (contractId) => invoke('contract-attachments:import-files', { contractId }),
+    reorder: (contractId, orderedIds) => invoke('contract-attachments:reorder', { contractId, orderedIds }),
+    rename: (id, originalName) => invoke('contract-attachments:rename', { id, originalName }),
+    remove: (id) => invoke('contract-attachments:delete', { id }),
+    openFile: (id) => invoke('contract-attachments:open-file', { id }),
+    preview: (id) => invoke('contract-attachments:preview', { id }),
+    generatePdf: (contractId) => invoke('contract-attachments:generate-pdf', { contractId }),
+  },
   employees: crudApi('employees'),
   accounts: crudApi('accounts'),
   categories: crudApi('categories'),

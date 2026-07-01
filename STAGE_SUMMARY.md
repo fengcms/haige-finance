@@ -1114,15 +1114,334 @@ pnpm verify
 
 ---
 
+## 阶段九：Electron 打包配置与试用版交付
+
+### 阶段目标
+
+引入 Electron 打包工具，完成本机 macOS 目录包构建，为后续生成可分发安装包做准备。
+
+本阶段不做应用图标、代码签名、自动更新和 Windows 实机验证。
+
+### 已完成内容
+
+1. 引入打包工具：
+   - `electron-builder`
+2. 修正 pnpm 构建脚本审批配置：
+   - `electron-winstaller`
+3. 新增 electron-builder 配置：
+   - `electron-builder.yml`
+4. 新增打包脚本：
+   - `pnpm pack:dir`
+   - `pnpm pack:mac`
+   - `pnpm pack:smoke-test`
+   - `pnpm dist:mac`
+   - `pnpm dist:win`
+5. macOS 目录包配置：
+   - `productName: 海哥财务管理`
+   - `appId: com.haige.finance`
+   - `asar: true`
+   - `asarUnpack: **/*.node`
+6. 确保原生模块打包：
+   - electron-builder 执行了 `better-sqlite3` rebuild
+7. 新增 `.gitignore` 忽略：
+   - `release/`
+8. 更新打包计划文档：
+   - `PACKAGING_PLAN.md`
+9. 更新开发说明文档：
+   - `DEVELOPMENT_GUIDE.md`
+10. 修复打包后主进程启动失败：
+   - 将 `dist/shared/**` 加入 electron-builder files
+   - 避免 `ERR_MODULE_NOT_FOUND: dist/shared/schemas/account.js`
+11. 新增打包产物结构检查脚本：
+   - `scripts/pack-smoke-test.mjs`
+12. 修复打包后 renderer 白屏：
+   - Vite 配置增加 `base: './'`
+   - 避免 `file://` 加载时 `/assets/...` 资源路径找不到
+13. 新增目录包修补脚本：
+   - `scripts/patch-packaged-app.mjs`
+
+### 关键文件
+
+```text
+package.json
+pnpm-lock.yaml
+pnpm-workspace.yaml
+.gitignore
+electron-builder.yml
+PACKAGING_PLAN.md
+DEVELOPMENT_GUIDE.md
+STAGE_SUMMARY.md
+scripts/pack-smoke-test.mjs
+scripts/patch-packaged-app.mjs
+vite.config.ts
+```
+
+### 已验证命令
+
+```bash
+pnpm typecheck
+pnpm build
+pnpm pack:dir
+pnpm pack:smoke-test
+pnpm pack:patch-app
+```
+
+### 验证结果
+
+1. TypeScript 类型检查通过。
+2. renderer 和 main 构建通过。
+3. `pnpm pack:dir` 先执行了完整 `pnpm verify`，并通过。
+4. electron-builder 成功完成 macOS arm64 目录包构建。
+5. 打包过程中成功 rebuild `better-sqlite3`。
+6. `pnpm pack:smoke-test` 通过，确认 `app.asar` 包含主进程运行需要的 shared 文件。
+7. `pnpm pack:smoke-test` 通过，确认 renderer 入口不再使用绝对 `/assets/...` 路径。
+8. `pnpm pack:patch-app` 已修补当前 release 目录中的 app.asar。
+9. 产物位置：
+
+```text
+release/mac-arm64/海哥财务管理.app
+```
+
+### 当前已知限制
+
+1. 当前使用默认 Electron 图标。
+2. 当前 macOS 包未签名。
+3. 当前只验证了 macOS arm64 目录包。
+4. 尚未验证 dmg 安装包。
+5. 尚未验证 Windows nsis 安装包。
+6. 尚未做自动更新。
+
+---
+
+## 阶段十：合同附件与图片转 PDF
+
+### 阶段目标
+
+为合同管理增加本地附件能力，支持上传图片或 PDF，支持图片排序后生成 PDF，并保持现有分层架构。
+
+本阶段不实现完整内置 PDF 阅读器，不做 OCR，不做云同步。
+
+### 已完成内容
+
+1. 新增合同附件表：
+   - `contract_attachments`
+2. 附件支持字段：
+   - 合同 ID
+   - 文件类型：图片 / PDF
+   - 来源：上传 / 生成
+   - 原始文件名
+   - 本地存储文件名
+   - 本地存储路径
+   - MIME 类型
+   - 排序值
+   - 软删除时间
+3. 新增共享枚举、类型和 zod schema。
+4. 新增 repository 层：
+   - 合同存在性检查
+   - 附件列表
+   - 附件创建
+   - 附件排序
+   - 附件软删除
+5. 新增 service 层：
+   - 选择并导入图片 / PDF
+   - 将附件复制到本地数据目录
+   - 根据图片排序生成 PDF
+   - 调用系统默认工具打开附件
+6. 新增 IPC 层：
+   - `contract-attachments:list`
+   - `contract-attachments:import-files`
+   - `contract-attachments:reorder`
+   - `contract-attachments:delete`
+   - `contract-attachments:open-file`
+   - `contract-attachments:generate-pdf`
+7. 扩展 preload 安全桥接：
+   - `window.haige.contractAttachments`
+8. preload 版本提升：
+   - `window.haige.version = '0.10.0'`
+9. 新增 renderer API：
+   - `src/renderer/api/contractAttachmentApi.ts`
+10. 合同管理页面新增“附件”入口和侧边抽屉。
+11. 附件抽屉支持：
+   - 上传图片/PDF
+   - 图片生成 PDF
+   - 刷新列表
+   - 上移 / 下移排序
+   - 系统打开文件
+   - 软删除附件
+12. 图片转 PDF 使用 Electron 隐藏窗口渲染 HTML 后 `printToPDF` 生成 A4 PDF。
+13. 新增合同附件 smoke test。
+14. `pnpm verify` 已纳入合同附件 smoke test。
+15. `db:init-test` 已覆盖合同附件表结构检查。
+
+### 关键文件
+
+```text
+package.json
+STAGE_SUMMARY.md
+DEVELOPMENT_GUIDE.md
+USER_GUIDE.md
+
+src/main/db/migrations.ts
+src/main/db/schema.ts
+src/main/repositories/contractAttachmentRepository.ts
+src/main/services/contractAttachmentService.ts
+src/main/ipc/contractAttachmentIpc.ts
+src/main/main.ts
+
+src/preload/index.cjs
+
+src/renderer/api/contractAttachmentApi.ts
+src/renderer/pages/ContractsPage.tsx
+
+src/shared/constants/enums.ts
+src/shared/types/app.ts
+src/shared/types/contractAttachment.ts
+src/shared/schemas/contractAttachment.ts
+
+scripts/db-init-test.mjs
+scripts/contract-attachment-smoke-test.mjs
+```
+
+### 验证方式
+
+```bash
+pnpm typecheck
+pnpm build
+pnpm db:init-test
+pnpm contract-attachment:smoke-test
+pnpm verify
+```
+
+### 使用验证
+
+1. 启动应用：
+
+```bash
+pnpm dev
+```
+
+2. 进入“合同管理”。
+3. 确保至少有一个合同。
+4. 点击合同行的“附件”。
+5. 点击“上传图片/PDF”，选择图片或 PDF。
+6. 上传多张图片后，使用“上移 / 下移”调整顺序。
+7. 点击“图片生成 PDF”。
+8. 点击 PDF 附件的“打开”，应调用系统默认 PDF 工具打开。
+
+### 当前已知限制
+
+1. 当前 PDF 预览使用系统默认工具打开，尚未内置 PDF 阅读器。（阶段十一已补充内置预览）
+2. 图片转 PDF 默认按 A4 纸张居中等比缩放，不做裁剪和扫描增强。
+3. 附件删除为软删除，当前不会立即物理删除本地文件。
+4. smoke test 覆盖数据库结构、排序和软删除，不覆盖系统文件选择框和隐藏窗口 PDF 渲染。
+
+---
+
+## 阶段十一：合同附件体验增强与文件安全完善
+
+### 阶段目标
+
+在阶段十的合同附件基础上，增强日常使用体验和本地文件安全提示。
+
+本阶段不引入新的拖拽库，不做 OCR，不做自动清理物理文件。
+
+### 已完成内容
+
+1. 附件列表增加图片缩略图。
+2. PDF 附件显示 PDF 图标。
+3. 附件列表增加文件大小。
+4. 附件列表增加创建时间。
+5. 附件列表增加本地文件存在性检查。
+6. 本地文件丢失时：
+   - 显示“本地文件丢失”
+   - 禁用预览
+   - 禁用打开
+7. 新增附件预览接口：
+   - `contract-attachments:preview`
+8. 图片附件支持系统内预览。
+9. PDF 附件支持系统内预览。
+10. 新增附件重命名接口：
+   - `contract-attachments:rename`
+11. 重命名只修改数据库中的显示名称 `original_name`，不修改物理文件名和路径。
+12. preload 版本提升：
+   - `window.haige.version = '0.11.0'`
+13. “下移”按钮在最后一条附件时禁用。
+14. smoke test 增加附件重命名检查。
+15. 更新用户操作手册。
+
+### 关键文件
+
+```text
+USER_GUIDE.md
+STAGE_SUMMARY.md
+
+src/main/repositories/contractAttachmentRepository.ts
+src/main/services/contractAttachmentService.ts
+src/main/ipc/contractAttachmentIpc.ts
+
+src/preload/index.cjs
+
+src/renderer/api/contractAttachmentApi.ts
+src/renderer/pages/ContractsPage.tsx
+
+src/shared/types/app.ts
+src/shared/types/contractAttachment.ts
+src/shared/schemas/contractAttachment.ts
+
+scripts/contract-attachment-smoke-test.mjs
+```
+
+### 验证方式
+
+```bash
+pnpm typecheck
+pnpm build
+pnpm contract-attachment:smoke-test
+pnpm verify
+```
+
+### 手动验证建议
+
+1. 启动应用：
+
+```bash
+pnpm dev
+```
+
+2. 进入“合同管理”。
+3. 点击合同“附件”。
+4. 上传图片，确认列表出现缩略图。
+5. 上传 PDF，确认列表出现 PDF 图标。
+6. 点击“预览”，确认图片和 PDF 可在系统内弹窗展示。
+7. 点击“打开”，确认可调用系统默认工具。
+8. 点击“重命名”，确认列表显示名称更新。
+9. 手动移动或删除某个附件文件后刷新列表，确认显示“本地文件丢失”。
+
+### 当前已知限制
+
+1. 图片缩略图使用预览接口读取原图 data URL，附件很多或图片很大时后续可优化为独立缩略图缓存。
+2. PDF 预览使用 Chromium 对 data URL PDF 的内置支持，如特定系统环境异常，仍可使用“打开”调用系统工具。
+3. 附件排序仍使用上移 / 下移，暂未引入拖拽排序。
+4. 附件软删除后物理文件仍保留，清理策略留到后续阶段。
+
+---
+
 ## 下一阶段建议
 
-下一步可以进入“Electron 打包配置与试用版交付”。
+下一步建议进入“附件文件清理策略”或“安装包与发布体验完善”。
 
-推荐先完成：
+合同附件后续增强可完成：
 
-1. 确认应用正式名称和图标。
-2. 选择打包工具。
-3. 配置 macOS 开发打包。
-4. 验证打包后 SQLite 数据库路径。
-5. 验证打包后备份和 Excel 导出。
-6. 验证打包后 better-sqlite3 正常加载。
+1. 拖拽排序。
+2. 独立缩略图缓存。
+3. 附件批量上传进度。
+4. 物理文件清理策略。
+
+安装包与发布体验完善可完成：
+
+1. 准备应用图标。
+2. 配置 macOS dmg。
+3. 验证打包 app 首次启动数据库创建。
+4. 验证打包 app 中备份和 Excel 导出。
+5. 评估 macOS 签名和 notarization。
+6. 在 Windows 环境验证 nsis 安装包。

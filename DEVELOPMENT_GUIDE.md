@@ -47,6 +47,7 @@ pnpm typecheck
 pnpm build
 pnpm db:init-test
 pnpm crud:smoke-test
+pnpm contract-attachment:smoke-test
 pnpm transaction:smoke-test
 pnpm project-stats:smoke-test
 pnpm report:smoke-test
@@ -73,6 +74,68 @@ pnpm verify
 5. 导出 Excel 文件。
 
 当前版本不支持自动恢复数据库。恢复数据库需要关闭连接、替换文件、重启应用，后续会单独设计安全流程。
+
+## 打包试用版
+
+当前项目使用 `electron-builder`。
+
+本机目录包：
+
+```bash
+pnpm pack:dir
+```
+
+macOS 目录包：
+
+```bash
+pnpm pack:mac
+```
+
+macOS dmg：
+
+```bash
+pnpm dist:mac
+```
+
+Windows nsis：
+
+```bash
+pnpm dist:win
+```
+
+当前已验证 `pnpm pack:dir`，产物位置：
+
+```text
+release/mac-arm64/海哥财务管理.app
+```
+
+打包产物结构检查：
+
+```bash
+pnpm pack:smoke-test
+```
+
+该命令会检查 `app.asar` 内是否包含主进程运行依赖的 shared 文件。
+
+如果打包后白屏，并且控制台出现：
+
+```text
+Failed to load resource: net::ERR_FILE_NOT_FOUND
+```
+
+需要检查 `dist/renderer/index.html` 里的资源路径是否为：
+
+```text
+./assets/...
+```
+
+不能是：
+
+```text
+/assets/...
+```
+
+注意：当前 macOS 包未签名，且使用默认 Electron 图标。
 
 ## 重要架构约定
 

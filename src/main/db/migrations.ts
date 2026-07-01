@@ -75,6 +75,29 @@ export const createCoreTablesSql = `
   CREATE INDEX IF NOT EXISTS idx_contracts_project_id ON contracts(project_id);
   CREATE INDEX IF NOT EXISTS idx_contracts_status ON contracts(status);
 
+  CREATE TABLE IF NOT EXISTS contract_attachments (
+    id TEXT PRIMARY KEY,
+    contract_id TEXT NOT NULL,
+    file_type TEXT NOT NULL,
+    source_type TEXT NOT NULL,
+    original_name TEXT NOT NULL,
+    stored_name TEXT NOT NULL,
+    stored_path TEXT NOT NULL,
+    mime_type TEXT,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    deleted_at INTEGER,
+    FOREIGN KEY (contract_id) REFERENCES contracts(id),
+    CHECK (file_type IN ('image', 'pdf')),
+    CHECK (source_type IN ('uploaded', 'generated')),
+    CHECK (sort_order >= 0)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_contract_attachments_contract_id ON contract_attachments(contract_id);
+  CREATE INDEX IF NOT EXISTS idx_contract_attachments_file_type ON contract_attachments(file_type);
+  CREATE INDEX IF NOT EXISTS idx_contract_attachments_sort_order ON contract_attachments(sort_order);
+
   CREATE TABLE IF NOT EXISTS employees (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,

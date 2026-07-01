@@ -10,6 +10,12 @@ export type ProjectType = (typeof projectTypeOptions)[number];
 export const contractStatusOptions = ['draft', 'signed', 'in_progress', 'completed', 'settled', 'voided'] as const;
 export type ContractStatus = (typeof contractStatusOptions)[number];
 
+export const contractAttachmentFileTypeOptions = ['image', 'pdf'] as const;
+export type ContractAttachmentFileType = (typeof contractAttachmentFileTypeOptions)[number];
+
+export const contractAttachmentSourceTypeOptions = ['uploaded', 'generated'] as const;
+export type ContractAttachmentSourceType = (typeof contractAttachmentSourceTypeOptions)[number];
+
 export const employeeStatusOptions = ['active', 'inactive', 'left'] as const;
 export type EmployeeStatus = (typeof employeeStatusOptions)[number];
 

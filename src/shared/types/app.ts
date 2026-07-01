@@ -2,6 +2,7 @@ import type { ApiResult, ListQuery, ListResult } from './api.js';
 import type { Account } from './account.js';
 import type { Category } from './category.js';
 import type { Contract } from './contract.js';
+import type { ContractAttachment, ContractAttachmentPreview, GenerateContractPdfResult } from './contractAttachment.js';
 import type { Customer } from './customer.js';
 import type { Employee } from './employee.js';
 import type { BackupResult, ExportResult, MaintenanceInfo } from './maintenance.js';
@@ -27,6 +28,7 @@ export interface HaigeApi {
   customers: CrudApi<Customer>;
   projects: CrudApi<CustomerProject>;
   contracts: CrudApi<Contract>;
+  contractAttachments: ContractAttachmentApi;
   employees: CrudApi<Employee>;
   accounts: CrudApi<Account>;
   categories: CrudApi<Category>;
@@ -41,6 +43,17 @@ export interface CrudApi<T> {
   create: (input: unknown) => Promise<ApiResult<T>>;
   update: (id: string, input: unknown) => Promise<ApiResult<T>>;
   remove: (id: string) => Promise<ApiResult<{ id: string }>>;
+}
+
+export interface ContractAttachmentApi {
+  list: (contractId: string) => Promise<ApiResult<ContractAttachment[]>>;
+  importFiles: (contractId: string) => Promise<ApiResult<ContractAttachment[]>>;
+  reorder: (contractId: string, orderedIds: string[]) => Promise<ApiResult<ContractAttachment[]>>;
+  rename: (id: string, originalName: string) => Promise<ApiResult<ContractAttachment>>;
+  remove: (id: string) => Promise<ApiResult<{ id: string }>>;
+  openFile: (id: string) => Promise<ApiResult<{ id: string; path: string }>>;
+  preview: (id: string) => Promise<ApiResult<ContractAttachmentPreview>>;
+  generatePdf: (contractId: string) => Promise<ApiResult<GenerateContractPdfResult>>;
 }
 
 export interface TransactionApi extends CrudApi<Transaction> {

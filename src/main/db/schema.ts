@@ -5,6 +5,8 @@ import type {
   CategoryStatus,
   CategoryType,
   ContractStatus,
+  ContractAttachmentFileType,
+  ContractAttachmentSourceType,
   CustomerStatus,
   EmployeeStatus,
   FundType,
@@ -95,6 +97,29 @@ export const contracts = sqliteTable(
     customerIdx: index('idx_contracts_customer_id').on(table.customerId),
     projectIdx: index('idx_contracts_project_id').on(table.projectId),
     statusIdx: index('idx_contracts_status').on(table.status),
+  }),
+);
+
+export const contractAttachments = sqliteTable(
+  'contract_attachments',
+  {
+    id: text('id').primaryKey(),
+    contractId: text('contract_id')
+      .notNull()
+      .references(() => contracts.id),
+    fileType: text('file_type').$type<ContractAttachmentFileType>().notNull(),
+    sourceType: text('source_type').$type<ContractAttachmentSourceType>().notNull(),
+    originalName: text('original_name').notNull(),
+    storedName: text('stored_name').notNull(),
+    storedPath: text('stored_path').notNull(),
+    mimeType: text('mime_type'),
+    sortOrder: integer('sort_order').notNull().default(0),
+    ...timestamps,
+  },
+  (table) => ({
+    contractIdx: index('idx_contract_attachments_contract_id').on(table.contractId),
+    fileTypeIdx: index('idx_contract_attachments_file_type').on(table.fileType),
+    sortOrderIdx: index('idx_contract_attachments_sort_order').on(table.sortOrder),
   }),
 );
 

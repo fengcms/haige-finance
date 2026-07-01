@@ -1,0 +1,35 @@
+appId: com.haige.finance
+productName: 海哥财务管理
+copyright: Copyright © 2026
+
+directories:
+  output: release
+
+files:
+  - dist/main/**
+  - dist/preload/**
+  - dist/renderer/**
+  - dist/shared/**
+  - package.json
+
+asar: true
+asarUnpack:
+  - '**/*.node'
+
+npmRebuild: true
+
+mac:
+  category: public.app-category.finance
+  target:
+    - dir
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true

@@ -43,6 +43,7 @@ const requiredTables = [
   'customers',
   'projects',
   'contracts',
+  'contract_attachments',
   'employees',
   'accounts',
   'categories',
@@ -77,6 +78,7 @@ function assertColumn(table, columnName) {
 
 for (const [table, columnName] of [
   ['contracts', 'amount_cents'],
+  ['contract_attachments', 'sort_order'],
   ['accounts', 'opening_balance_cents'],
   ['transactions', 'amount_cents'],
 ]) {
@@ -88,6 +90,10 @@ for (const [table, columnName] of [
 
 for (const columnName of ['status', 'voided_at', 'void_reason', 'deleted_at']) {
   assertColumn('transactions', columnName);
+}
+
+for (const columnName of ['contract_id', 'file_type', 'source_type', 'stored_path', 'deleted_at']) {
+  assertColumn('contract_attachments', columnName);
 }
 
 const accountCount = defaultAccounts.filter((account) =>
