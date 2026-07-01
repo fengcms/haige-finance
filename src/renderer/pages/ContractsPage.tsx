@@ -269,7 +269,7 @@ export function ContractsPage() {
         title={currentContract ? `合同附件：${currentContract.name}` : '合同附件'}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        width={760}
+        width={`calc(100vw - 200px)`}
       >
         <Space direction="vertical" size="middle" className="page-stack">
           <Space wrap>
