@@ -269,6 +269,90 @@ export const createCoreTablesSql = `
   CREATE INDEX IF NOT EXISTS idx_transactions_status ON transactions(status);
   CREATE INDEX IF NOT EXISTS idx_transactions_fund_type ON transactions(fund_type);
 
+  CREATE TABLE IF NOT EXISTS payroll_batches (
+    id TEXT PRIMARY KEY,
+    month TEXT NOT NULL,
+    name TEXT NOT NULL,
+    pay_date TEXT,
+    account_id TEXT,
+    status TEXT NOT NULL DEFAULT 'draft',
+    total_gross_cents INTEGER NOT NULL DEFAULT 0,
+    total_deduction_cents INTEGER NOT NULL DEFAULT 0,
+    total_net_cents INTEGER NOT NULL DEFAULT 0,
+    paid_transaction_id TEXT,
+    voided_at INTEGER,
+    void_reason TEXT,
+    remark TEXT,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    deleted_at INTEGER,
+    FOREIGN KEY (account_id) REFERENCES accounts(id),
+    FOREIGN KEY (paid_transaction_id) REFERENCES transactions(id),
+    CHECK (month GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]'),
+    CHECK (pay_date IS NULL OR pay_date GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'),
+    CHECK (status IN ('draft', 'confirmed', 'paid', 'voided')),
+    CHECK (total_gross_cents >= 0),
+    CHECK (total_deduction_cents >= 0),
+    CHECK (total_net_cents >= 0)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_payroll_batches_month ON payroll_batches(month);
+  CREATE INDEX IF NOT EXISTS idx_payroll_batches_status ON payroll_batches(status);
+  CREATE INDEX IF NOT EXISTS idx_payroll_batches_account_id ON payroll_batches(account_id);
+
+  CREATE TABLE IF NOT EXISTS payroll_items (
+    id TEXT PRIMARY KEY,
+    batch_id TEXT NOT NULL,
+    employee_id TEXT NOT NULL,
+    base_salary_cents INTEGER NOT NULL DEFAULT 0,
+    attendance_bonus_cents INTEGER NOT NULL DEFAULT 0,
+    phone_allowance_cents INTEGER NOT NULL DEFAULT 0,
+    bonus_cents INTEGER NOT NULL DEFAULT 0,
+    commission_cents INTEGER NOT NULL DEFAULT 0,
+    deduction_cents INTEGER NOT NULL DEFAULT 0,
+    social_insurance_cents INTEGER NOT NULL DEFAULT 0,
+    housing_fund_cents INTEGER NOT NULL DEFAULT 0,
+    tax_cents INTEGER NOT NULL DEFAULT 0,
+    gross_salary_cents INTEGER NOT NULL DEFAULT 0,
+    net_salary_cents INTEGER NOT NULL DEFAULT 0,
+    remark TEXT,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    deleted_at INTEGER,
+    FOREIGN KEY (batch_id) REFERENCES payroll_batches(id),
+    FOREIGN KEY (employee_id) REFERENCES employees(id),
+    CHECK (base_salary_cents >= 0),
+    CHECK (attendance_bonus_cents >= 0),
+    CHECK (phone_allowance_cents >= 0),
+    CHECK (bonus_cents >= 0),
+    CHECK (commission_cents >= 0),
+    CHECK (deduction_cents >= 0),
+    CHECK (social_insurance_cents >= 0),
+    CHECK (housing_fund_cents >= 0),
+    CHECK (tax_cents >= 0),
+    CHECK (gross_salary_cents >= 0),
+    CHECK (net_salary_cents >= 0)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_payroll_items_batch_id ON payroll_items(batch_id);
+  CREATE INDEX IF NOT EXISTS idx_payroll_items_employee_id ON payroll_items(employee_id);
+
+  CREATE TABLE IF NOT EXISTS payroll_operation_logs (
+    id TEXT PRIMARY KEY,
+    batch_id TEXT NOT NULL,
+    item_id TEXT,
+    action TEXT NOT NULL,
+    detail TEXT,
+    created_at INTEGER NOT NULL,
+    FOREIGN KEY (batch_id) REFERENCES payroll_batches(id),
+    FOREIGN KEY (item_id) REFERENCES payroll_items(id),
+    CHECK (action IN ('create', 'update', 'delete', 'confirm', 'cancel_confirm', 'pay', 'void', 'adjust'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_payroll_operation_logs_batch_id ON payroll_operation_logs(batch_id);
+  CREATE INDEX IF NOT EXISTS idx_payroll_operation_logs_item_id ON payroll_operation_logs(item_id);
+  CREATE INDEX IF NOT EXISTS idx_payroll_operation_logs_action ON payroll_operation_logs(action);
+
   CREATE TABLE IF NOT EXISTS operation_logs (
     id TEXT PRIMARY KEY,
     entity_type TEXT NOT NULL,

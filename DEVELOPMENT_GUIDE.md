@@ -35,7 +35,7 @@ pnpm dev
 开发日志中应看到类似输出：
 
 ```text
-[preload] haige api ready: true, version: 0.8.0
+[preload] haige api ready: true, version: 0.16.0
 ```
 
 ## 常用验证命令
@@ -51,6 +51,7 @@ pnpm dictionary:smoke-test
 pnpm auth:smoke-test
 pnpm contract-attachment:smoke-test
 pnpm transaction:smoke-test
+pnpm payroll:smoke-test
 pnpm project-stats:smoke-test
 pnpm report:smoke-test
 pnpm backup:smoke-test
@@ -75,8 +76,10 @@ pnpm verify
 3. 查看导出目录。
 4. 手动备份 SQLite 数据库。
 5. 导出 Excel 文件。
+6. 从备份文件恢复数据库。
+7. 撤销最近一次成功恢复。
 
-当前版本不支持自动恢复数据库。恢复数据库需要关闭连接、替换文件、重启应用，后续会单独设计安全流程。
+恢复数据库前系统会自动创建恢复前备份，便于恢复失败或恢复错文件时撤销。
 
 ## 打包试用版
 

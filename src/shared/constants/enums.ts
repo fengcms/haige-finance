@@ -55,3 +55,9 @@ export type FundType = (typeof fundTypeOptions)[number];
 
 export const operationActionOptions = ['create', 'update', 'delete', 'void', 'restore', 'seed'] as const;
 export type OperationAction = (typeof operationActionOptions)[number];
+
+export const payrollBatchStatusOptions = ['draft', 'confirmed', 'paid', 'voided'] as const;
+export type PayrollBatchStatus = (typeof payrollBatchStatusOptions)[number];
+
+export const payrollOperationActionOptions = ['create', 'update', 'delete', 'confirm', 'cancel_confirm', 'pay', 'void', 'adjust'] as const;
+export type PayrollOperationAction = (typeof payrollOperationActionOptions)[number];

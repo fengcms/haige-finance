@@ -105,9 +105,38 @@ body {
   margin-bottom: 0;
 }
 
+.payroll-form .ant-form-item {
+  margin-bottom: 12px;
+}
+
+.payroll-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 16px;
+}
+
+.payroll-employee-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.payroll-employee-tag {
+  cursor: pointer;
+  user-select: none;
+}
+
+.payroll-employee-tag-disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  user-select: none;
+}
+
 @media (max-width: 760px) {
   .transaction-form-grid,
-  .transaction-switch-row {
+  .transaction-switch-row,
+  .payroll-form-grid {
     grid-template-columns: 1fr;
   }
 }

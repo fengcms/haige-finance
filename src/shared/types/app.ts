@@ -8,6 +8,7 @@ import type { DictionaryItem, DictionaryQuery, UpdateDictionaryItemInput } from 
 import type { Employee } from './employee.js';
 import type { AuthResult, AuthStatus, ChangePasswordInput, LoginInput, SetupPasswordInput } from './auth.js';
 import type { BackupResult, ExportResult, MaintenanceInfo, RestoreResult, UndoRestoreResult } from './maintenance.js';
+import type { PayrollBatch, PayrollBatchDetail, PayrollBatchListQuery, PayrollItem } from './payroll.js';
 import type { CustomerProject } from './project.js';
 import type { ProjectStatsDetail, ProjectStatsListItem } from './projectStats.js';
 import type { ReportBundle, ReportQuery } from './report.js';
@@ -37,6 +38,7 @@ export interface HaigeApi {
   accounts: CrudApi<Account>;
   categories: CrudApi<Category>;
   transactions: TransactionApi;
+  payroll: PayrollApi;
   projectStats: ProjectStatsApi;
   reports: ReportApi;
   maintenance: MaintenanceApi;
@@ -76,6 +78,22 @@ export interface TransactionApi extends CrudApi<Transaction> {
   list: (query?: TransactionListQuery) => Promise<ApiResult<ListResult<TransactionListItem>>>;
   void: (id: string, reason: string) => Promise<ApiResult<TransactionListItem>>;
   accountBalances: () => Promise<ApiResult<AccountBalance[]>>;
+}
+
+export interface PayrollApi {
+  listBatches: (query?: PayrollBatchListQuery) => Promise<ApiResult<PayrollBatch[]>>;
+  createBatch: (input: unknown) => Promise<ApiResult<PayrollBatch>>;
+  updateBatch: (id: string, input: unknown) => Promise<ApiResult<PayrollBatch>>;
+  removeBatch: (id: string) => Promise<ApiResult<{ id: string }>>;
+  getDetail: (id: string) => Promise<ApiResult<PayrollBatchDetail>>;
+  createItem: (input: unknown) => Promise<ApiResult<PayrollItem>>;
+  createItemsBatch: (input: unknown) => Promise<ApiResult<PayrollItem[]>>;
+  updateItem: (id: string, input: unknown) => Promise<ApiResult<PayrollItem>>;
+  removeItem: (id: string) => Promise<ApiResult<{ id: string }>>;
+  confirmBatch: (id: string) => Promise<ApiResult<PayrollBatch>>;
+  cancelConfirmBatch: (id: string) => Promise<ApiResult<PayrollBatch>>;
+  payBatch: (input: unknown) => Promise<ApiResult<PayrollBatch>>;
+  voidBatch: (id: string, reason: string) => Promise<ApiResult<PayrollBatch>>;
 }
 
 export interface ProjectStatsApi {

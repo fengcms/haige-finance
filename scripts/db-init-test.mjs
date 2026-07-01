@@ -50,6 +50,9 @@ const requiredTables = [
   'accounts',
   'categories',
   'transactions',
+  'payroll_batches',
+  'payroll_items',
+  'payroll_operation_logs',
   'operation_logs',
 ];
 
@@ -83,6 +86,20 @@ for (const [table, columnName] of [
   ['contract_attachments', 'sort_order'],
   ['accounts', 'opening_balance_cents'],
   ['transactions', 'amount_cents'],
+  ['payroll_batches', 'total_gross_cents'],
+  ['payroll_batches', 'total_deduction_cents'],
+  ['payroll_batches', 'total_net_cents'],
+  ['payroll_items', 'base_salary_cents'],
+  ['payroll_items', 'attendance_bonus_cents'],
+  ['payroll_items', 'phone_allowance_cents'],
+  ['payroll_items', 'bonus_cents'],
+  ['payroll_items', 'commission_cents'],
+  ['payroll_items', 'deduction_cents'],
+  ['payroll_items', 'social_insurance_cents'],
+  ['payroll_items', 'housing_fund_cents'],
+  ['payroll_items', 'tax_cents'],
+  ['payroll_items', 'gross_salary_cents'],
+  ['payroll_items', 'net_salary_cents'],
 ]) {
   const column = assertColumn(table, columnName);
   if (!String(column.type).toUpperCase().includes('INTEGER')) {
@@ -100,6 +117,18 @@ for (const columnName of ['contract_id', 'file_type', 'source_type', 'stored_pat
 
 for (const columnName of ['dict_type', 'code', 'name', 'sort_order', 'status', 'is_system', 'deleted_at']) {
   assertColumn('dictionary_items', columnName);
+}
+
+for (const columnName of ['month', 'name', 'pay_date', 'account_id', 'status', 'paid_transaction_id', 'voided_at', 'void_reason', 'deleted_at']) {
+  assertColumn('payroll_batches', columnName);
+}
+
+for (const columnName of ['batch_id', 'employee_id', 'remark', 'deleted_at']) {
+  assertColumn('payroll_items', columnName);
+}
+
+for (const columnName of ['batch_id', 'item_id', 'action', 'detail', 'created_at']) {
+  assertColumn('payroll_operation_logs', columnName);
 }
 
 const accountCount = defaultAccounts.filter((account) =>

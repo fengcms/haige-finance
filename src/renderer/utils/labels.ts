@@ -72,6 +72,24 @@ export const transactionStatusLabels: Record<string, string> = {
   deleted: '已删除',
 };
 
+export const payrollBatchStatusLabels: Record<string, string> = {
+  draft: '草稿',
+  confirmed: '已确认',
+  paid: '已发放',
+  voided: '已作废',
+};
+
+export const payrollOperationActionLabels: Record<string, string> = {
+  create: '创建',
+  update: '更新',
+  delete: '删除',
+  confirm: '确认',
+  cancel_confirm: '撤销确认',
+  pay: '发放',
+  void: '作废',
+  adjust: '调整',
+};
+
 export const receiptStatusLabels: Record<string, string> = {
   not_started: '未收款',
   partial: '部分收款',

@@ -12,6 +12,8 @@ import type {
   EmployeeStatus,
   FundType,
   OperationAction,
+  PayrollBatchStatus,
+  PayrollOperationAction,
   ProjectStatus,
   ProjectType,
   TransactionDirection,
@@ -240,6 +242,80 @@ export const transactions = sqliteTable(
     employeeIdx: index('idx_transactions_employee_id').on(table.employeeId),
     statusIdx: index('idx_transactions_status').on(table.status),
     fundTypeIdx: index('idx_transactions_fund_type').on(table.fundType),
+  }),
+);
+
+export const payrollBatches = sqliteTable(
+  'payroll_batches',
+  {
+    id: text('id').primaryKey(),
+    month: text('month').notNull(),
+    name: text('name').notNull(),
+    payDate: text('pay_date'),
+    accountId: text('account_id').references(() => accounts.id),
+    status: text('status').$type<PayrollBatchStatus>().notNull().default('draft'),
+    totalGrossCents: integer('total_gross_cents').notNull().default(0),
+    totalDeductionCents: integer('total_deduction_cents').notNull().default(0),
+    totalNetCents: integer('total_net_cents').notNull().default(0),
+    paidTransactionId: text('paid_transaction_id').references(() => transactions.id),
+    voidedAt: integer('voided_at'),
+    voidReason: text('void_reason'),
+    remark: text('remark'),
+    ...timestamps,
+  },
+  (table) => ({
+    monthIdx: index('idx_payroll_batches_month').on(table.month),
+    statusIdx: index('idx_payroll_batches_status').on(table.status),
+    accountIdx: index('idx_payroll_batches_account_id').on(table.accountId),
+  }),
+);
+
+export const payrollItems = sqliteTable(
+  'payroll_items',
+  {
+    id: text('id').primaryKey(),
+    batchId: text('batch_id')
+      .notNull()
+      .references(() => payrollBatches.id),
+    employeeId: text('employee_id')
+      .notNull()
+      .references(() => employees.id),
+    baseSalaryCents: integer('base_salary_cents').notNull().default(0),
+    attendanceBonusCents: integer('attendance_bonus_cents').notNull().default(0),
+    phoneAllowanceCents: integer('phone_allowance_cents').notNull().default(0),
+    bonusCents: integer('bonus_cents').notNull().default(0),
+    commissionCents: integer('commission_cents').notNull().default(0),
+    deductionCents: integer('deduction_cents').notNull().default(0),
+    socialInsuranceCents: integer('social_insurance_cents').notNull().default(0),
+    housingFundCents: integer('housing_fund_cents').notNull().default(0),
+    taxCents: integer('tax_cents').notNull().default(0),
+    grossSalaryCents: integer('gross_salary_cents').notNull().default(0),
+    netSalaryCents: integer('net_salary_cents').notNull().default(0),
+    remark: text('remark'),
+    ...timestamps,
+  },
+  (table) => ({
+    batchIdx: index('idx_payroll_items_batch_id').on(table.batchId),
+    employeeIdx: index('idx_payroll_items_employee_id').on(table.employeeId),
+  }),
+);
+
+export const payrollOperationLogs = sqliteTable(
+  'payroll_operation_logs',
+  {
+    id: text('id').primaryKey(),
+    batchId: text('batch_id')
+      .notNull()
+      .references(() => payrollBatches.id),
+    itemId: text('item_id').references(() => payrollItems.id),
+    action: text('action').$type<PayrollOperationAction>().notNull(),
+    detail: text('detail'),
+    createdAt: integer('created_at').notNull(),
+  },
+  (table) => ({
+    batchIdx: index('idx_payroll_operation_logs_batch_id').on(table.batchId),
+    itemIdx: index('idx_payroll_operation_logs_item_id').on(table.itemId),
+    actionIdx: index('idx_payroll_operation_logs_action').on(table.action),
   }),
 );
 

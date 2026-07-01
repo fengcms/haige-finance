@@ -10,6 +10,7 @@ import { registerContractAttachmentIpc } from './ipc/contractAttachmentIpc.js';
 import { registerDictionaryIpc } from './ipc/dictionaryIpc.js';
 import { registerMaintenanceIpc } from './ipc/maintenanceIpc.js';
 import { registerMasterDataIpc } from './ipc/masterDataIpc.js';
+import { registerPayrollIpc } from './ipc/payrollIpc.js';
 import { registerProjectStatsIpc } from './ipc/projectStatsIpc.js';
 import { registerReportIpc } from './ipc/reportIpc.js';
 import { registerTransactionIpc } from './ipc/transactionIpc.js';
@@ -41,7 +42,7 @@ function createWindow() {
     mainWindow.webContents.once('did-finish-load', () => {
       void mainWindow.webContents
         .executeJavaScript(
-          'window.haige ? { ok: Boolean(window.haige.version && window.haige.appPing && window.haige.auth && window.haige.auth.status && window.haige.transactions && window.haige.transactions.list && window.haige.projectStats && window.haige.projectStats.list && window.haige.reports && window.haige.reports.get && window.haige.maintenance && window.haige.maintenance.info && window.haige.contractAttachments && window.haige.contractAttachments.list && window.haige.dictionaries && window.haige.dictionaries.list), version: window.haige.version } : { ok: false, version: null }',
+          'window.haige ? { ok: Boolean(window.haige.version && window.haige.appPing && window.haige.auth && window.haige.auth.status && window.haige.transactions && window.haige.transactions.list && window.haige.payroll && window.haige.payroll.listBatches && window.haige.payroll.createItemsBatch && window.haige.projectStats && window.haige.projectStats.list && window.haige.reports && window.haige.reports.get && window.haige.maintenance && window.haige.maintenance.info && window.haige.contractAttachments && window.haige.contractAttachments.list && window.haige.dictionaries && window.haige.dictionaries.list), version: window.haige.version } : { ok: false, version: null }',
         )
         .then((preloadStatus) => {
           console.log(`[preload] haige api ready: ${preloadStatus.ok}, version: ${preloadStatus.version}`);
@@ -64,6 +65,7 @@ app.whenReady().then(() => {
   registerContractAttachmentIpc();
   registerDictionaryIpc();
   registerTransactionIpc();
+  registerPayrollIpc();
   registerProjectStatsIpc();
   registerReportIpc();
   registerMaintenanceIpc();

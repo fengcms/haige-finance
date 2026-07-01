@@ -1844,20 +1844,296 @@ pnpm verify
 
 ---
 
-下一步建议进入“附件文件清理策略”或“安装包与发布体验完善”。
+## 阶段十六 A：工资管理数据底座
 
-合同附件后续增强可完成：
+### 阶段目标
 
-1. 拖拽排序。
-2. 独立缩略图缓存。
-3. 附件批量上传进度。
-4. 物理文件清理策略。
+为“工资管理”模块建立基础数据结构和后端调用链。
 
-安装包与发布体验完善可完成：
+本阶段只做数据底座，不做完整页面、不做工资发放入账、不影响项目利润报表。
 
-1. 准备应用图标。
-2. 配置 macOS dmg。
-3. 验证打包 app 首次启动数据库创建。
-4. 验证打包 app 中备份和 Excel 导出。
-5. 评估 macOS 签名和 notarization。
-6. 在 Windows 环境验证 nsis 安装包。
+### 需求口径
+
+1. 工资独立于客户项目，先作为单独工资管理数据。
+2. 工资批次允许同一个月份存在多个批次，支持周结等场景。
+3. 工资明细字段包括：
+   - 基本工资
+   - 全勤
+   - 话补
+   - 奖金
+   - 提成
+   - 扣款
+4. 社保、公积金、个税字段保留，但暂不参与计算。
+5. 应发工资计算口径：
+   - 基本工资 + 全勤 + 话补 + 奖金 + 提成
+6. 实发工资计算口径：
+   - 应发工资 - 扣款
+7. 工资批次支持草稿、已确认、已发放、已作废状态。
+8. 本阶段实现草稿和已确认流转；已发放、作废和调整留到后续发放入账阶段。
+9. 已发放工资后续允许修改或作废，但必须留痕。
+
+### 已完成内容
+
+1. 新增工资相关共享枚举：
+   - `payrollBatchStatusOptions`
+   - `payrollOperationActionOptions`
+2. 新增工资共享类型：
+   - `PayrollBatch`
+   - `PayrollItem`
+   - `PayrollOperationLog`
+   - `PayrollBatchDetail`
+3. 新增工资 zod schema：
+   - 工资批次查询、创建、更新
+   - 工资明细创建、更新
+   - IPC payload 校验
+4. 新增 SQLite 表：
+   - `payroll_batches`
+   - `payroll_items`
+   - `payroll_operation_logs`
+5. Drizzle schema 同步新增工资表定义。
+6. 新增工资 Repository：
+   - 批次列表、详情、创建、更新、软删除
+   - 明细列表、创建、更新、软删除
+   - 批次合计重算
+   - 操作日志写入和查询
+7. 新增工资 Service：
+   - 工资批次创建、更新、删除
+   - 工资明细创建、更新、删除
+   - 应发/实发工资计算
+   - 批次确认和撤销确认
+   - 业务校验和操作留痕
+8. 新增工资 IPC：
+   - `payroll:list-batches`
+   - `payroll:create-batch`
+   - `payroll:update-batch`
+   - `payroll:delete-batch`
+   - `payroll:get-detail`
+   - `payroll:create-item`
+   - `payroll:update-item`
+   - `payroll:delete-item`
+   - `payroll:confirm-batch`
+   - `payroll:cancel-confirm-batch`
+9. preload 暴露 `window.haige.payroll`。
+10. preload 版本提升到 `0.15.0`。
+11. renderer 新增 `payrollApi`。
+12. `db:init-test` 增加工资表和工资金额整数字段检查。
+13. 新增 `payroll:smoke-test`，并纳入 `pnpm verify`。
+14. 更新 `PAYROLL_MODULE_PLAN.md`，记录工资模块后续分阶段计划。
+
+### 关键文件
+
+```text
+PAYROLL_MODULE_PLAN.md
+DEVELOPMENT_GUIDE.md
+STAGE_SUMMARY.md
+package.json
+
+src/shared/constants/enums.ts
+src/shared/types/payroll.ts
+src/shared/types/app.ts
+src/shared/schemas/payroll.ts
+
+src/main/db/migrations.ts
+src/main/db/schema.ts
+src/main/repositories/payrollRepository.ts
+src/main/services/payrollService.ts
+src/main/ipc/payrollIpc.ts
+src/main/main.ts
+
+src/preload/index.cjs
+src/renderer/api/payrollApi.ts
+
+scripts/db-init-test.mjs
+scripts/payroll-smoke-test.mjs
+```
+
+### 验证方式
+
+```bash
+pnpm typecheck
+pnpm db:init-test
+pnpm payroll:smoke-test
+pnpm verify
+```
+
+## 阶段十六 B：工资管理页面与发放入账
+
+### 阶段目标
+
+在阶段十六 A 的工资数据底座上，完成工资管理页面和工资发放入账闭环。
+
+### 已完成内容
+
+1. 左侧菜单新增“工资管理”。
+2. 新增工资管理页面：
+   - 工资批次列表
+   - 月份筛选
+   - 状态筛选
+   - 工资批次详情 Drawer
+3. 支持工资批次：
+   - 新增
+   - 编辑
+   - 删除草稿
+   - 确认
+   - 撤销确认
+   - 发放
+   - 作废
+4. 支持工资明细：
+   - 新增
+   - 编辑
+   - 删除草稿或已确认明细
+5. 工资明细字段包括：
+   - 基本工资
+   - 全勤
+   - 话补
+   - 奖金
+   - 提成
+   - 扣款
+   - 社保
+   - 公积金
+   - 个税
+6. 页面金额以元录入，后端仍以整数分存储。
+7. 发放工资时生成一条财务支出流水：
+   - 方向：支出
+   - 分类：人工工资
+   - 资金性质：工资
+   - 不关联客户
+   - 不关联项目
+   - 不影响项目利润
+   - 影响账户余额和月度支出
+8. 已发放工资允许编辑已有明细。
+9. 已发放工资明细调整后，会同步更新关联财务流水金额。
+10. 已发放工资明细调整会记录 `adjust` 操作日志。
+11. 作废已发放工资会联动作废关联财务流水。
+12. 作废工资会记录作废原因和 `void` 操作日志。
+13. `payroll:smoke-test` 增加发放、调整、作废联动验证。
+14. 用户手册补充工资管理操作说明。
+
+### 关键文件
+
+```text
+USER_GUIDE.md
+STAGE_SUMMARY.md
+PAYROLL_MODULE_PLAN.md
+
+src/main/services/payrollService.ts
+src/main/ipc/payrollIpc.ts
+src/shared/schemas/payroll.ts
+src/shared/types/app.ts
+
+src/preload/index.cjs
+src/renderer/App.tsx
+src/renderer/layouts/AppLayout.tsx
+src/renderer/pages/PayrollPage.tsx
+src/renderer/api/payrollApi.ts
+src/renderer/utils/labels.ts
+src/renderer/styles/global.css
+src/shared/constants/routes.ts
+
+scripts/payroll-smoke-test.mjs
+```
+
+### 验证方式
+
+```bash
+pnpm typecheck
+pnpm build
+pnpm payroll:smoke-test
+pnpm verify
+```
+
+### 当前已知限制
+
+1. 工资发放当前按“一个工资批次生成一条财务流水”处理。
+2. 已发放工资允许编辑已有明细，但暂不允许新增或删除已发放明细。
+3. 扣款目前是总额字段，后续可扩展为可配置扣款明细。
+4. 工资模块还没有独立统计报表。
+5. Excel 导出暂未加入工资相关 sheet。
+
+---
+
+## 阶段十六 C：工资批量录入体验优化
+
+### 阶段目标
+
+优化工资明细录入体验，避免逐个员工打开弹窗录入。
+
+### 已完成内容
+
+1. 工资批次详情中新增“批量录入”入口。
+2. 批量录入使用 Drawer 展示，不影响原详情页面。
+3. 顶部以员工 Tag 展示所有员工。
+4. 点击员工 Tag 后，下方表格新增对应员工工资录入行。
+5. 当前批次已存在工资明细的员工显示“已录”，不允许重复选择。
+6. 批量录入表格支持字段：
+   - 基本工资
+   - 全勤
+   - 话补
+   - 奖金
+   - 提成
+   - 扣款
+   - 社保
+   - 公积金
+   - 个税
+   - 备注
+7. 批量录入时实时显示每行应发和实发。
+8. 批量录入底部显示：
+   - 已选员工数
+   - 应发合计
+   - 扣款合计
+   - 实发合计
+9. 新增后端批量保存接口：
+   - `payroll:create-items-batch`
+10. preload 新增：
+    - `window.haige.payroll.createItemsBatch`
+11. preload 版本提升到 `0.16.0`。
+12. 后端批量保存使用数据库事务，避免只保存一半。
+13. 后端会校验：
+    - 批次必须是草稿或已确认
+    - 员工必须存在
+    - 同批次不能重复录入同一员工
+    - 批量请求内部不能出现重复员工
+14. 单条新增工资明细也补充了重复员工校验。
+15. `payroll:smoke-test` 增加批量录入和重复员工验证。
+16. 用户手册补充批量录入说明。
+
+### 关键文件
+
+```text
+USER_GUIDE.md
+STAGE_SUMMARY.md
+PAYROLL_MODULE_PLAN.md
+DEVELOPMENT_GUIDE.md
+
+src/shared/schemas/payroll.ts
+src/shared/types/app.ts
+src/main/repositories/payrollRepository.ts
+src/main/services/payrollService.ts
+src/main/ipc/payrollIpc.ts
+src/main/main.ts
+src/preload/index.cjs
+src/renderer/api/payrollApi.ts
+src/renderer/pages/PayrollPage.tsx
+src/renderer/styles/global.css
+
+scripts/payroll-smoke-test.mjs
+```
+
+### 验证方式
+
+```bash
+pnpm typecheck
+pnpm build
+pnpm payroll:smoke-test
+pnpm verify
+```
+
+### 当前已知限制
+
+1. 批量录入只用于新增工资明细，不用于批量修改已存在明细。
+2. 已发放或已作废批次不能批量新增明细。
+3. 批量录入目前不支持从 Excel 粘贴或导入。
+
+---
+
+下一步建议进入“阶段十七：工资报表增强”。
