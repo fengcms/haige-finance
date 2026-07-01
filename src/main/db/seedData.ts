@@ -1,4 +1,5 @@
 import type Database from 'better-sqlite3';
+import { defaultDictionaryItems } from '../../shared/constants/dictionaries.js';
 
 interface DefaultAccount {
   id: string;
@@ -216,7 +217,44 @@ export function seedDefaultData(db: Database.Database, now = Date.now()) {
     ON CONFLICT(id) DO NOTHING
   `);
 
+  const insertDictionaryItem = db.prepare(`
+    INSERT INTO dictionary_items (
+      id,
+      dict_type,
+      code,
+      name,
+      sort_order,
+      status,
+      is_system,
+      created_at,
+      updated_at
+    )
+    VALUES (
+      @id,
+      @dictType,
+      @code,
+      @name,
+      @sortOrder,
+      'active',
+      1,
+      @createdAt,
+      @updatedAt
+    )
+    ON CONFLICT(dict_type, code) DO UPDATE SET
+      sort_order = excluded.sort_order,
+      updated_at = excluded.updated_at
+  `);
+
   const transaction = db.transaction(() => {
+    for (const item of defaultDictionaryItems) {
+      insertDictionaryItem.run({
+        ...item,
+        id: `dict_${item.dictType}_${item.code}`,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
     for (const account of defaultAccounts) {
       insertAccount.run({
         ...account,

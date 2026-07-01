@@ -2,6 +2,7 @@ import Database from 'better-sqlite3';
 import fs from 'node:fs';
 import path from 'node:path';
 import { migrateSql } from '../dist/main/db/migrations.js';
+import { defaultDictionaryItems } from '../dist/shared/constants/dictionaries.js';
 import { defaultAccounts, defaultCategories, seedDefaultData } from '../dist/main/db/seedData.js';
 
 const dataDir = path.join(process.cwd(), 'data');
@@ -40,6 +41,7 @@ if (result?.value !== 'ok') {
 
 const requiredTables = [
   'app_meta',
+  'dictionary_items',
   'customers',
   'projects',
   'contracts',
@@ -96,6 +98,10 @@ for (const columnName of ['contract_id', 'file_type', 'source_type', 'stored_pat
   assertColumn('contract_attachments', columnName);
 }
 
+for (const columnName of ['dict_type', 'code', 'name', 'sort_order', 'status', 'is_system', 'deleted_at']) {
+  assertColumn('dictionary_items', columnName);
+}
+
 const accountCount = defaultAccounts.filter((account) =>
   db.prepare('SELECT 1 AS ok FROM accounts WHERE id = ?').get(account.id),
 ).length;
@@ -112,9 +118,18 @@ if (categoryCount !== defaultCategories.length) {
   throw new Error(`Default categories seed failed: expected ${defaultCategories.length}, got ${categoryCount}`);
 }
 
+const dictionaryCount = defaultDictionaryItems.filter((item) =>
+  db.prepare('SELECT 1 AS ok FROM dictionary_items WHERE dict_type = ? AND code = ?').get(item.dictType, item.code),
+).length;
+
+if (dictionaryCount !== defaultDictionaryItems.length) {
+  throw new Error(`Default dictionary seed failed: expected ${defaultDictionaryItems.length}, got ${dictionaryCount}`);
+}
+
 db.close();
 
 console.log(`SQLite init test passed: ${databasePath}`);
 console.log(`Verified tables: ${requiredTables.join(', ')}`);
 console.log(`Verified default accounts: ${defaultAccounts.length}`);
 console.log(`Verified default categories: ${defaultCategories.length}`);
+console.log(`Verified default dictionary items: ${defaultDictionaryItems.length}`);

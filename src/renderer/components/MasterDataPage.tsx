@@ -66,15 +66,25 @@ export function MasterDataPage<T extends { id: string }>({
     void load('');
   }, []);
 
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    if (editingItem) {
+      form.setFieldsValue(normalizeBeforeEdit ? normalizeBeforeEdit(editingItem) : editingItem);
+    } else {
+      form.resetFields();
+    }
+  }, [open, editingItem, form]);
+
   function handleCreate() {
     setEditingItem(null);
-    form.resetFields();
     setOpen(true);
   }
 
   function handleEdit(item: T) {
     setEditingItem(item);
-    form.setFieldsValue(normalizeBeforeEdit ? normalizeBeforeEdit(item) : item);
     setOpen(true);
   }
 

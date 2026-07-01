@@ -4,6 +4,8 @@ import {
   BarChartOutlined,
   DashboardOutlined,
   FileTextOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
   ProjectOutlined,
   SettingOutlined,
   TeamOutlined,
@@ -11,8 +13,9 @@ import {
   WalletOutlined,
 } from '@ant-design/icons';
 import type React from 'react';
-import { Layout, Menu, Typography } from 'antd';
+import { Button, Layout, Menu, Typography } from 'antd';
 import type { ItemType } from 'antd/es/menu/interface';
+import { useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { routes } from '@/shared/constants/routes';
 
@@ -39,12 +42,16 @@ const menuItems: ItemType[] = routes.map((route) => ({
 export function AppLayout() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [collapsed, setCollapsed] = useState(false);
   const selectedPath = routes.find((route) => route.path === location.pathname)?.path ?? '/';
 
   return (
     <Layout className="app-shell">
-      <Sider width={224} theme="dark">
-        <div className="brand">海哥财务管理</div>
+      <Sider width={224} collapsedWidth={72} collapsed={collapsed} trigger={null} theme="dark" className="app-sider">
+        <div className="brand">
+          <img className="brand-logo" src="./logo.svg" alt="海哥财务管理" />
+          {!collapsed ? <span className="brand-name">海哥财务管理</span> : null}
+        </div>
         <Menu
           theme="dark"
           mode="inline"
@@ -53,8 +60,14 @@ export function AppLayout() {
           onClick={({ key }) => navigate(key)}
         />
       </Sider>
-      <Layout>
+      <Layout className="app-main">
         <Header className="app-header">
+          <Button
+            type="text"
+            icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+            onClick={() => setCollapsed((value) => !value)}
+            aria-label={collapsed ? '展开侧边栏' : '收起侧边栏'}
+          />
           <Typography.Title level={4} className="app-title">
             小公司本地账务管理系统
           </Typography.Title>

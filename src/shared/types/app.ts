@@ -4,6 +4,7 @@ import type { Category } from './category.js';
 import type { Contract } from './contract.js';
 import type { ContractAttachment, ContractAttachmentPreview, GenerateContractPdfResult } from './contractAttachment.js';
 import type { Customer } from './customer.js';
+import type { DictionaryItem, DictionaryQuery, UpdateDictionaryItemInput } from './dictionary.js';
 import type { Employee } from './employee.js';
 import type { BackupResult, ExportResult, MaintenanceInfo } from './maintenance.js';
 import type { CustomerProject } from './project.js';
@@ -29,6 +30,7 @@ export interface HaigeApi {
   projects: CrudApi<CustomerProject>;
   contracts: CrudApi<Contract>;
   contractAttachments: ContractAttachmentApi;
+  dictionaries: DictionaryApi;
   employees: CrudApi<Employee>;
   accounts: CrudApi<Account>;
   categories: CrudApi<Category>;
@@ -54,6 +56,11 @@ export interface ContractAttachmentApi {
   openFile: (id: string) => Promise<ApiResult<{ id: string; path: string }>>;
   preview: (id: string) => Promise<ApiResult<ContractAttachmentPreview>>;
   generatePdf: (contractId: string) => Promise<ApiResult<GenerateContractPdfResult>>;
+}
+
+export interface DictionaryApi {
+  list: (query?: DictionaryQuery) => Promise<ApiResult<DictionaryItem[]>>;
+  update: (id: string, input: UpdateDictionaryItemInput) => Promise<ApiResult<DictionaryItem>>;
 }
 
 export interface TransactionApi extends CrudApi<Transaction> {

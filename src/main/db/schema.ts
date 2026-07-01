@@ -1,4 +1,5 @@
 import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import type { DictionaryStatus, DictionaryType } from '../../shared/constants/dictionaries.js';
 import type {
   AccountStatus,
   AccountType,
@@ -29,6 +30,26 @@ const timestamps = {
   updatedAt: integer('updated_at').notNull(),
   deletedAt: integer('deleted_at'),
 };
+
+export const dictionaryItems = sqliteTable(
+  'dictionary_items',
+  {
+    id: text('id').primaryKey(),
+    dictType: text('dict_type').$type<DictionaryType>().notNull(),
+    code: text('code').notNull(),
+    name: text('name').notNull(),
+    sortOrder: integer('sort_order').notNull().default(0),
+    status: text('status').$type<DictionaryStatus>().notNull().default('active'),
+    isSystem: integer('is_system', { mode: 'boolean' }).notNull().default(true),
+    remark: text('remark'),
+    ...timestamps,
+  },
+  (table) => ({
+    typeCodeIdx: uniqueIndex('idx_dictionary_items_type_code').on(table.dictType, table.code),
+    dictTypeIdx: index('idx_dictionary_items_dict_type').on(table.dictType),
+    statusIdx: index('idx_dictionary_items_status').on(table.status),
+  }),
+);
 
 export const customers = sqliteTable(
   'customers',

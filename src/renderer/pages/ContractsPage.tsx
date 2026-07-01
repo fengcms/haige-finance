@@ -13,7 +13,8 @@ import {
   type Customer,
   type ProjectListItem,
 } from '@/renderer/api/masterDataApi';
-import { contractStatusLabels, toOptions } from '@/renderer/utils/labels';
+import { useDictionaries } from '@/renderer/hooks/useDictionaries';
+import { contractStatusLabels } from '@/renderer/utils/labels';
 import { formatYuan, parseYuan } from '@/renderer/utils/money';
 import type { ContractAttachment, ContractAttachmentPreview } from '@/shared/types/contractAttachment';
 
@@ -34,6 +35,8 @@ export function ContractsPage() {
   const [renameState, setRenameState] = useState<RenameState | null>(null);
   const [loading, setLoading] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();
+  const dictionaries = useDictionaries(['contract_status']);
+  const statusLabels = dictionaries.labels('contract_status', contractStatusLabels);
 
   useEffect(() => {
     void Promise.all([customerApi.list({ page: 1, pageSize: 100 }), projectApi.list({ page: 1, pageSize: 100 })]).then(([customerResult, projectResult]) => {
@@ -220,7 +223,7 @@ export function ContractsPage() {
             title: '状态',
             dataIndex: 'status',
             width: 120,
-            render: (value) => <Tag>{contractStatusLabels[String(value)] ?? value}</Tag>,
+            render: (value) => <Tag>{statusLabels[String(value)] ?? value}</Tag>,
           },
         ]}
         rowActions={(record) => (
@@ -245,7 +248,7 @@ export function ContractsPage() {
           { name: 'contractNo', label: '合同编号', render: <Input /> },
           { name: 'amountYuan', label: '合同金额（元）', required: true, render: <Input /> },
           { name: 'signedDate', label: '签约日期', render: <Input placeholder="YYYY-MM-DD" /> },
-          { name: 'status', label: '合同状态', required: true, render: <Select options={toOptions(contractStatusLabels)} /> },
+          { name: 'status', label: '合同状态', required: true, render: <Select options={dictionaries.options('contract_status', contractStatusLabels)} /> },
           { name: 'remark', label: '备注', render: <Input.TextArea rows={3} /> },
         ]}
         normalizeBeforeEdit={(item) => ({

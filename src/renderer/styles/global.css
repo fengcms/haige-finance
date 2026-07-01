@@ -11,25 +11,54 @@ body {
 }
 
 .app-shell {
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.app-sider {
+  height: 100vh;
+  overflow: hidden;
+}
+
+.app-main {
+  height: 100vh;
+  min-width: 0;
 }
 
 .brand {
   height: 64px;
-  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 18px;
   color: #fff;
-  font-size: 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.brand-logo {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  border-radius: 8px;
+}
+
+.brand-name {
+  overflow: hidden;
+  font-size: 17px;
   font-weight: 700;
-  line-height: 64px;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .app-header {
   display: flex;
   align-items: center;
+  gap: 12px;
   height: 64px;
-  padding: 0 24px;
+  padding: 0 20px;
   background: #fff;
   border-bottom: 1px solid #edf0f5;
+  flex: 0 0 auto;
 }
 
 .app-title.ant-typography {
@@ -39,6 +68,7 @@ body {
 .app-content {
   padding: 24px;
   overflow: auto;
+  min-height: 0;
 }
 
 .page-stack {
@@ -48,4 +78,32 @@ body {
 .toolbar {
   width: 100%;
   justify-content: space-between;
+}
+
+.transaction-form .ant-form-item {
+  margin-bottom: 12px;
+}
+
+.transaction-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 16px;
+}
+
+.transaction-switch-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: 16px;
+  padding: 4px 0 0;
+}
+
+.transaction-remark {
+  margin-bottom: 0;
+}
+
+@media (max-width: 760px) {
+  .transaction-form-grid,
+  .transaction-switch-row {
+    grid-template-columns: 1fr;
+  }
 }

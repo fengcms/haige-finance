@@ -1,9 +1,13 @@
 import { Input, Select, Tag } from 'antd';
 import { MasterDataPage } from '@/renderer/components/MasterDataPage';
 import { customerApi, type Customer } from '@/renderer/api/masterDataApi';
-import { customerStatusLabels, toOptions } from '@/renderer/utils/labels';
+import { useDictionaries } from '@/renderer/hooks/useDictionaries';
+import { customerStatusLabels } from '@/renderer/utils/labels';
 
 export function CustomersPage() {
+  const dictionaries = useDictionaries(['customer_status']);
+  const statusLabels = dictionaries.labels('customer_status', customerStatusLabels);
+
   return (
     <MasterDataPage<Customer>
       title="客户"
@@ -17,7 +21,7 @@ export function CustomersPage() {
           title: '状态',
           dataIndex: 'status',
           width: 120,
-          render: (value) => <Tag>{customerStatusLabels[String(value)] ?? value}</Tag>,
+          render: (value) => <Tag>{statusLabels[String(value)] ?? value}</Tag>,
         },
         { title: '备注', dataIndex: 'remark', width: 220 },
       ]}
@@ -31,7 +35,7 @@ export function CustomersPage() {
           name: 'status',
           label: '客户状态',
           required: true,
-          render: <Select options={toOptions(customerStatusLabels)} />,
+          render: <Select options={dictionaries.options('customer_status', customerStatusLabels)} />,
         },
         { name: 'remark', label: '备注', render: <Input.TextArea rows={3} /> },
       ]}

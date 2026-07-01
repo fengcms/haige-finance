@@ -6,6 +6,7 @@ import { migrateDatabase } from './db/migrate.js';
 import { seedDatabase } from './db/seed.js';
 import { registerAppIpc } from './ipc/appIpc.js';
 import { registerContractAttachmentIpc } from './ipc/contractAttachmentIpc.js';
+import { registerDictionaryIpc } from './ipc/dictionaryIpc.js';
 import { registerMaintenanceIpc } from './ipc/maintenanceIpc.js';
 import { registerMasterDataIpc } from './ipc/masterDataIpc.js';
 import { registerProjectStatsIpc } from './ipc/projectStatsIpc.js';
@@ -39,7 +40,7 @@ function createWindow() {
     mainWindow.webContents.once('did-finish-load', () => {
       void mainWindow.webContents
         .executeJavaScript(
-          'window.haige ? { ok: Boolean(window.haige.version && window.haige.appPing && window.haige.transactions && window.haige.transactions.list && window.haige.projectStats && window.haige.projectStats.list && window.haige.reports && window.haige.reports.get && window.haige.maintenance && window.haige.maintenance.info && window.haige.contractAttachments && window.haige.contractAttachments.list), version: window.haige.version } : { ok: false, version: null }',
+          'window.haige ? { ok: Boolean(window.haige.version && window.haige.appPing && window.haige.transactions && window.haige.transactions.list && window.haige.projectStats && window.haige.projectStats.list && window.haige.reports && window.haige.reports.get && window.haige.maintenance && window.haige.maintenance.info && window.haige.contractAttachments && window.haige.contractAttachments.list && window.haige.dictionaries && window.haige.dictionaries.list), version: window.haige.version } : { ok: false, version: null }',
         )
         .then((preloadStatus) => {
           console.log(`[preload] haige api ready: ${preloadStatus.ok}, version: ${preloadStatus.version}`);
@@ -59,6 +60,7 @@ app.whenReady().then(() => {
   registerAppIpc();
   registerMasterDataIpc();
   registerContractAttachmentIpc();
+  registerDictionaryIpc();
   registerTransactionIpc();
   registerProjectStatsIpc();
   registerReportIpc();

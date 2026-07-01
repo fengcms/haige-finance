@@ -8,6 +8,36 @@ export const createAppMetaTableSql = `
 `;
 
 export const createCoreTablesSql = `
+  CREATE TABLE IF NOT EXISTS dictionary_items (
+    id TEXT PRIMARY KEY,
+    dict_type TEXT NOT NULL,
+    code TEXT NOT NULL,
+    name TEXT NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'active',
+    is_system INTEGER NOT NULL DEFAULT 1,
+    remark TEXT,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    deleted_at INTEGER,
+    CHECK (dict_type IN (
+      'customer_status',
+      'project_status',
+      'project_type',
+      'contract_status',
+      'employee_status',
+      'account_type',
+      'account_status'
+    )),
+    CHECK (status IN ('active', 'inactive')),
+    CHECK (is_system IN (0, 1)),
+    CHECK (sort_order >= 0)
+  );
+
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_dictionary_items_type_code ON dictionary_items(dict_type, code);
+  CREATE INDEX IF NOT EXISTS idx_dictionary_items_dict_type ON dictionary_items(dict_type);
+  CREATE INDEX IF NOT EXISTS idx_dictionary_items_status ON dictionary_items(status);
+
   CREATE TABLE IF NOT EXISTS customers (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,

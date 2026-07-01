@@ -5,13 +5,13 @@ import { useEffect, useState } from 'react';
 import { MasterDataPage } from '@/renderer/components/MasterDataPage';
 import { customerApi, projectApi, type Customer } from '@/renderer/api/masterDataApi';
 import { projectStatsApi } from '@/renderer/api/projectStatsApi';
+import { useDictionaries } from '@/renderer/hooks/useDictionaries';
 import { formatYuan } from '@/renderer/utils/money';
 import {
   fundTypeLabels,
   projectStatusLabels,
   projectTypeLabels,
   receiptStatusLabels,
-  toOptions,
   transactionDirectionLabels,
   transactionStatusLabels,
 } from '@/renderer/utils/labels';
@@ -25,6 +25,9 @@ export function ProjectsPage() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();
+  const dictionaries = useDictionaries(['project_status', 'project_type']);
+  const statusLabels = dictionaries.labels('project_status', projectStatusLabels);
+  const typeLabels = dictionaries.labels('project_type', projectTypeLabels);
 
   async function loadStats() {
     const result = await projectStatsApi.list();
@@ -140,13 +143,13 @@ export function ProjectsPage() {
             title: '项目类型',
             dataIndex: 'projectType',
             width: 100,
-            render: (value) => (value ? projectTypeLabels[String(value)] : '-'),
+            render: (value) => (value ? typeLabels[String(value)] : '-'),
           },
           {
             title: '状态',
             dataIndex: 'status',
             width: 100,
-            render: (value) => <Tag>{projectStatusLabels[String(value)] ?? value}</Tag>,
+            render: (value) => <Tag>{statusLabels[String(value)] ?? value}</Tag>,
           },
         ]}
         rowActions={(record) => (
@@ -164,8 +167,8 @@ export function ProjectsPage() {
           { name: 'name', label: '项目名称', required: true, render: <Input /> },
           { name: 'community', label: '小区名称', render: <Input /> },
           { name: 'address', label: '施工地址', render: <Input /> },
-          { name: 'projectType', label: '项目类型', render: <Select allowClear options={toOptions(projectTypeLabels)} /> },
-          { name: 'status', label: '项目状态', required: true, render: <Select options={toOptions(projectStatusLabels)} /> },
+          { name: 'projectType', label: '项目类型', render: <Select allowClear options={dictionaries.options('project_type', projectTypeLabels)} /> },
+          { name: 'status', label: '项目状态', required: true, render: <Select options={dictionaries.options('project_status', projectStatusLabels)} /> },
           { name: 'remark', label: '备注', render: <Input.TextArea rows={3} /> },
         ]}
         normalizeBeforeSubmit={(values) => ({
@@ -180,7 +183,7 @@ export function ProjectsPage() {
             <Descriptions bordered size="small" column={3}>
               <Descriptions.Item label="项目">{detail.project.name}</Descriptions.Item>
               <Descriptions.Item label="客户">{detail.project.customerName || '-'}</Descriptions.Item>
-              <Descriptions.Item label="状态">{projectStatusLabels[detail.project.status]}</Descriptions.Item>
+              <Descriptions.Item label="状态">{statusLabels[detail.project.status]}</Descriptions.Item>
               <Descriptions.Item label="合同金额">{formatYuan(detail.stats.contractAmountCents)}</Descriptions.Item>
               <Descriptions.Item label="已收款">{formatYuan(detail.stats.receivedCents)}</Descriptions.Item>
               <Descriptions.Item label="已支出">{formatYuan(detail.stats.expenseCents)}</Descriptions.Item>

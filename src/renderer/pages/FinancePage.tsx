@@ -94,8 +94,20 @@ export function FinancePage() {
     void load();
   }, []);
 
-  function handleCreate() {
-    setEditingItem(null);
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    if (editingItem) {
+      form.setFieldsValue({
+        ...editingItem,
+        amountYuan: editingItem.amountCents / 100,
+        occurredDate: dayjs(editingItem.occurredDate),
+      });
+      return;
+    }
+
     form.resetFields();
     form.setFieldsValue({
       direction: 'income',
@@ -104,16 +116,15 @@ export function FinancePage() {
       affectsReceivable: false,
       affectsProjectProfit: false,
     });
+  }, [open, editingItem, form]);
+
+  function handleCreate() {
+    setEditingItem(null);
     setOpen(true);
   }
 
   function handleEdit(item: TransactionListItem) {
     setEditingItem(item);
-    form.setFieldsValue({
-      ...item,
-      amountYuan: item.amountCents / 100,
-      occurredDate: dayjs(item.occurredDate),
-    });
     setOpen(true);
   }
 
@@ -292,49 +303,62 @@ export function FinancePage() {
         </Space>
       </Card>
 
-      <Modal title={editingItem ? '编辑流水' : '新增流水'} open={open} okText="保存" cancelText="取消" onOk={handleSubmit} onCancel={() => setOpen(false)} destroyOnHidden>
-        <Form form={form} layout="vertical" preserve={false}>
-          <Form.Item name="transactionNo" label="流水号">
-            <Input placeholder="可选，不填也可以" />
-          </Form.Item>
-          <Form.Item name="occurredDate" label="发生日期" rules={[{ required: true, message: '请选择发生日期' }]}>
-            <DatePicker style={{ width: '100%' }} />
-          </Form.Item>
-          <Form.Item name="categoryId" label="收支分类" rules={[{ required: true, message: '请选择收支分类' }]}>
-            <Select options={categories.map((item) => ({ value: item.id, label: item.name }))} onChange={handleCategoryChange} />
-          </Form.Item>
-          <Form.Item name="direction" label="方向" rules={[{ required: true, message: '请选择方向' }]}>
-            <Select options={toOptions(transactionDirectionLabels)} />
-          </Form.Item>
-          <Form.Item name="amountYuan" label="金额（元）" rules={[{ required: true, message: '请输入金额' }]}>
-            <InputNumber min={0} precision={2} style={{ width: '100%' }} />
-          </Form.Item>
-          <Form.Item name="accountId" label="账户" rules={[{ required: true, message: '请选择账户' }]}>
-            <Select options={accounts.map((item) => ({ value: item.id, label: item.name }))} />
-          </Form.Item>
-          <Form.Item name="fundType" label="资金性质" rules={[{ required: true, message: '请选择资金性质' }]}>
-            <Select options={toOptions(fundTypeLabels)} />
-          </Form.Item>
-          <Form.Item name="customerId" label="关联客户">
-            <Select allowClear options={customers.map((item) => ({ value: item.id, label: item.name }))} />
-          </Form.Item>
-          <Form.Item name="projectId" label="关联项目">
-            <Select allowClear options={projects.map((item) => ({ value: item.id, label: item.name }))} />
-          </Form.Item>
-          <Form.Item name="employeeId" label="关联员工">
-            <Select allowClear options={employees.map((item) => ({ value: item.id, label: item.name }))} />
-          </Form.Item>
-          <Form.Item name="isCompanyFund" label="进入公司账户" valuePropName="checked">
-            <Switch />
-          </Form.Item>
-          <Form.Item name="affectsReceivable" label="影响项目应收" valuePropName="checked">
-            <Switch />
-          </Form.Item>
-          <Form.Item name="affectsProjectProfit" label="影响项目利润" valuePropName="checked">
-            <Switch />
-          </Form.Item>
-          <Form.Item name="remark" label="备注">
-            <Input.TextArea rows={3} />
+      <Modal
+        title={editingItem ? '编辑流水' : '新增流水'}
+        open={open}
+        okText="保存"
+        cancelText="取消"
+        width={900}
+        onOk={handleSubmit}
+        onCancel={() => setOpen(false)}
+        destroyOnHidden
+      >
+        <Form form={form} layout="vertical" preserve={false} className="transaction-form">
+          <div className="transaction-form-grid">
+            <Form.Item name="occurredDate" label="发生日期" rules={[{ required: true, message: '请选择发生日期' }]}>
+              <DatePicker allowClear={false} style={{ width: '100%' }} />
+            </Form.Item>
+            <Form.Item name="transactionNo" label="流水号">
+              <Input placeholder="可选，不填也可以" />
+            </Form.Item>
+            <Form.Item name="categoryId" label="收支分类" rules={[{ required: true, message: '请选择收支分类' }]}>
+              <Select options={categories.map((item) => ({ value: item.id, label: item.name }))} onChange={handleCategoryChange} />
+            </Form.Item>
+            <Form.Item name="accountId" label="账户" rules={[{ required: true, message: '请选择账户' }]}>
+              <Select options={accounts.map((item) => ({ value: item.id, label: item.name }))} />
+            </Form.Item>
+            <Form.Item name="direction" label="方向" rules={[{ required: true, message: '请选择方向' }]}>
+              <Select options={toOptions(transactionDirectionLabels)} />
+            </Form.Item>
+            <Form.Item name="amountYuan" label="金额（元）" rules={[{ required: true, message: '请输入金额' }]}>
+              <InputNumber min={0} precision={2} style={{ width: '100%' }} />
+            </Form.Item>
+            <Form.Item name="fundType" label="资金性质" rules={[{ required: true, message: '请选择资金性质' }]}>
+              <Select options={toOptions(fundTypeLabels)} />
+            </Form.Item>
+            <Form.Item name="customerId" label="关联客户">
+              <Select allowClear options={customers.map((item) => ({ value: item.id, label: item.name }))} />
+            </Form.Item>
+            <Form.Item name="projectId" label="关联项目">
+              <Select allowClear options={projects.map((item) => ({ value: item.id, label: item.name }))} />
+            </Form.Item>
+            <Form.Item name="employeeId" label="关联员工">
+              <Select allowClear options={employees.map((item) => ({ value: item.id, label: item.name }))} />
+            </Form.Item>
+          </div>
+          <div className="transaction-switch-row">
+            <Form.Item name="isCompanyFund" label="进入公司账户" valuePropName="checked">
+              <Switch />
+            </Form.Item>
+            <Form.Item name="affectsReceivable" label="影响项目应收" valuePropName="checked">
+              <Switch />
+            </Form.Item>
+            <Form.Item name="affectsProjectProfit" label="影响项目利润" valuePropName="checked">
+              <Switch />
+            </Form.Item>
+          </div>
+          <Form.Item name="remark" label="备注" className="transaction-remark">
+            <Input.TextArea rows={2} />
           </Form.Item>
         </Form>
       </Modal>

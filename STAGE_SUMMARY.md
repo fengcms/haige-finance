@@ -1426,7 +1426,244 @@ pnpm dev
 
 ---
 
+## 阶段十二：系统设置分栏与基础字典管理
+
+### 阶段目标
+
+将系统设置拆成更清晰的子栏目，并对不直接影响报表口径的基础状态/类型提供字典管理。
+
+本阶段不开放资金性质、流水方向、流水状态等报表相关字段的字典化，不允许修改底层业务编码。
+
+### 已完成内容
+
+1. 系统设置页面改为 Tabs：
+   - 数据备份
+   - 收支分类
+   - 字典设置
+   - 系统信息
+2. 新增字典表：
+   - `dictionary_items`
+3. 新增默认字典数据：
+   - 客户状态
+   - 项目状态
+   - 项目类型
+   - 合同状态
+   - 员工状态
+   - 账户类型
+   - 账户状态
+4. 字典项支持字段：
+   - 字典类型
+   - 稳定编码
+   - 显示名称
+   - 排序
+   - 状态
+   - 是否系统项
+   - 备注
+5. 字典管理支持：
+   - 修改显示名称
+   - 修改排序
+   - 启用 / 停用
+6. 字典管理不支持：
+   - 新增编码
+   - 删除编码
+   - 修改编码
+7. 默认字典 seed 不覆盖用户已修改的显示名称和启停状态。
+8. 新增字典 repository / service / IPC / preload / renderer API。
+9. preload 版本提升：
+   - `window.haige.version = '0.12.0'`
+10. 以下页面的显示和下拉选项优先使用字典：
+   - 客户管理
+   - 客户项目
+   - 合同管理
+   - 员工管理
+   - 账户管理
+11. 保留原有 `labels.ts` 作为兜底，避免字典接口异常时页面无显示。
+12. 新增字典 smoke test。
+13. `pnpm verify` 已纳入字典 smoke test。
+14. `db:init-test` 已覆盖字典表和默认字典数据。
+
+### 关键文件
+
+```text
+package.json
+DEVELOPMENT_GUIDE.md
+USER_GUIDE.md
+STAGE_SUMMARY.md
+
+src/shared/constants/dictionaries.ts
+src/shared/types/dictionary.ts
+src/shared/schemas/dictionary.ts
+src/shared/types/app.ts
+
+src/main/db/migrations.ts
+src/main/db/schema.ts
+src/main/db/seedData.ts
+src/main/repositories/dictionaryRepository.ts
+src/main/services/dictionaryService.ts
+src/main/ipc/dictionaryIpc.ts
+src/main/main.ts
+
+src/preload/index.cjs
+
+src/renderer/api/dictionaryApi.ts
+src/renderer/hooks/useDictionaries.ts
+src/renderer/pages/SettingsPage.tsx
+src/renderer/pages/CustomersPage.tsx
+src/renderer/pages/ProjectsPage.tsx
+src/renderer/pages/ContractsPage.tsx
+src/renderer/pages/EmployeesPage.tsx
+src/renderer/pages/AccountsPage.tsx
+
+scripts/db-init-test.mjs
+scripts/dictionary-smoke-test.mjs
+```
+
+### 验证方式
+
+```bash
+pnpm typecheck
+pnpm build
+pnpm db:init-test
+pnpm dictionary:smoke-test
+pnpm verify
+```
+
+### 手动验证建议
+
+1. 启动应用：
+
+```bash
+pnpm dev
+```
+
+2. 进入“系统设置”。
+3. 确认页面存在“数据备份 / 收支分类 / 字典设置 / 系统信息”栏目。
+4. 进入“字典设置”，选择“客户状态”。
+5. 修改“潜在客户”的显示名称和排序。
+6. 进入“客户管理”，确认客户状态显示和下拉选项使用新名称。
+7. 将某个字典项停用，确认新增/编辑下拉中不再显示该项。
+8. 确认已有历史数据仍可显示。
+
+### 当前已知限制
+
+1. 当前只允许编辑字典显示信息，不允许新增或修改编码。
+2. 资金性质、流水方向、流水状态、分类类型等报表相关字段仍保持系统枚举。
+3. 字典修改后，已打开的其他页面可能需要刷新或重新进入页面才能拿到最新下拉选项。
+4. 停用字典项只影响后续选择，不会自动修改历史数据。
+
+---
+
+## 阶段十三：界面布局与财务录入体验优化
+
+### 阶段目标
+
+优化主界面布局和财务流水录入体验，不修改财务数据结构、报表口径和业务规则。
+
+### 已完成内容
+
+1. 左侧侧边栏固定在窗口左侧。
+2. 应用整体改为 `100vh` 高度，右侧内容区独立滚动。
+3. 左侧品牌区新增 LOGO 图片。
+4. 品牌区和菜单区之间新增分割线。
+5. 侧边栏支持收起 / 展开。
+6. Header 左侧新增收起 / 展开按钮。
+7. 侧边栏收起时只显示 LOGO 和菜单图标。
+8. 新增占位 LOGO 文件：
+   - `public/logo.svg`
+9. 财务“新增/编辑流水”弹窗宽度调整为 900。
+10. 财务流水表单改为两列紧凑布局。
+11. 发生日期新增时默认当天。
+12. 发生日期设置为不可清空，避免误删必填日期。
+13. 开关项合并为一行展示。
+14. 备注区域压缩为两行。
+
+### 关键文件
+
+```text
+STAGE_SUMMARY.md
+public/logo.svg
+src/renderer/layouts/AppLayout.tsx
+src/renderer/pages/FinancePage.tsx
+src/renderer/styles/global.css
+```
+
+### 验证方式
+
+```bash
+pnpm typecheck
+pnpm build
+pnpm verify
+```
+
+### 手动验证建议
+
+1. 启动应用：
+
+```bash
+pnpm dev
+```
+
+2. 滚动右侧页面，确认左侧菜单不随内容滚动。
+3. 点击 Header 左侧按钮，确认侧边栏可收起和展开。
+4. 收起侧边栏后，确认只显示 LOGO 和菜单图标。
+5. 进入“财务管理”，点击“新增流水”。
+6. 确认发生日期默认为当天。
+7. 确认主要录入字段可在弹窗内紧凑显示。
+8. 新增一条流水，确认保存正常。
+9. 编辑已有流水，确认弹窗布局和保存正常。
+
+### 当前已知限制
+
+1. 当前 LOGO 为占位 SVG，后续可替换为正式品牌图片。
+2. 财务弹窗在特别矮的屏幕上仍可能需要弹窗内部滚动，但常规桌面窗口下应明显少滚动。
+
+---
+
 ## 下一阶段建议
+
+### 补充修复：编辑面板回填问题
+
+发现问题：
+
+1. 客户、项目、合同、员工、账户、收支分类等通用编辑弹窗打开后，原有数据没有回填。
+2. 财务流水编辑弹窗也存在同类风险。
+
+原因：
+
+1. 通用 `MasterDataPage` 和财务流水弹窗使用了 `destroyOnHidden`。
+2. 原逻辑在弹窗内容实际挂载前调用 `form.setFieldsValue`。
+3. 表单字段尚未注册完成，导致回填值丢失。
+
+已修复：
+
+1. `MasterDataPage` 改为在弹窗打开后的 `useEffect` 中执行回填。
+2. 新增模式在弹窗打开后重置表单。
+3. 编辑模式在弹窗打开后写入当前记录。
+4. 财务流水新增 / 编辑弹窗同步采用打开后回填逻辑。
+5. 财务流水新增仍默认当天日期。
+
+关键文件：
+
+```text
+src/renderer/components/MasterDataPage.tsx
+src/renderer/pages/FinancePage.tsx
+STAGE_SUMMARY.md
+```
+
+验证方式：
+
+```bash
+pnpm typecheck
+pnpm build
+pnpm verify
+```
+
+手动验证建议：
+
+1. 进入客户管理，编辑任意客户，确认弹窗回填原数据。
+2. 进入项目、合同、员工、账户、系统设置中的收支分类，分别编辑任意记录，确认回填正常。
+3. 进入财务管理，编辑任意流水，确认日期、金额、账户、分类等字段回填正常。
+4. 点击新增，确认不会残留上一条编辑数据。
 
 下一步建议进入“附件文件清理策略”或“安装包与发布体验完善”。
 

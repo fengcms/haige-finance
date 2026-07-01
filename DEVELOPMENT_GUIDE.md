@@ -47,6 +47,7 @@ pnpm typecheck
 pnpm build
 pnpm db:init-test
 pnpm crud:smoke-test
+pnpm dictionary:smoke-test
 pnpm contract-attachment:smoke-test
 pnpm transaction:smoke-test
 pnpm project-stats:smoke-test
