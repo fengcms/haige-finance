@@ -1,9 +1,11 @@
-import type { BackupResult, ExportResult, MaintenanceInfo } from '@/shared/types/maintenance';
+import type { BackupResult, ExportResult, MaintenanceInfo, RestoreResult, UndoRestoreResult } from '@/shared/types/maintenance';
 import { unwrapResult } from './client';
 
 export const maintenanceApi = {
   info: () => unwrapResult(getHaigeApi().maintenance.info()) as Promise<MaintenanceInfo>,
   backupDatabase: () => unwrapResult(getHaigeApi().maintenance.backupDatabase()) as Promise<BackupResult>,
+  restoreDatabase: () => unwrapResult(getHaigeApi().maintenance.restoreDatabase()) as Promise<RestoreResult | null>,
+  undoLastRestore: () => unwrapResult(getHaigeApi().maintenance.undoLastRestore()) as Promise<UndoRestoreResult>,
   exportExcel: () => unwrapResult(getHaigeApi().maintenance.exportExcel()) as Promise<ExportResult>,
 };
 

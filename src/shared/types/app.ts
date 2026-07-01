@@ -6,7 +6,8 @@ import type { ContractAttachment, ContractAttachmentPreview, GenerateContractPdf
 import type { Customer } from './customer.js';
 import type { DictionaryItem, DictionaryQuery, UpdateDictionaryItemInput } from './dictionary.js';
 import type { Employee } from './employee.js';
-import type { BackupResult, ExportResult, MaintenanceInfo } from './maintenance.js';
+import type { AuthResult, AuthStatus, ChangePasswordInput, LoginInput, SetupPasswordInput } from './auth.js';
+import type { BackupResult, ExportResult, MaintenanceInfo, RestoreResult, UndoRestoreResult } from './maintenance.js';
 import type { CustomerProject } from './project.js';
 import type { ProjectStatsDetail, ProjectStatsListItem } from './projectStats.js';
 import type { ReportBundle, ReportQuery } from './report.js';
@@ -26,6 +27,7 @@ export interface HaigeApi {
   version: string;
   appPing: () => Promise<PingResult>;
   invoke: <T>(channel: string, payload?: unknown) => Promise<ApiResult<T>>;
+  auth: AuthApi;
   customers: CrudApi<Customer>;
   projects: CrudApi<CustomerProject>;
   contracts: CrudApi<Contract>;
@@ -45,6 +47,13 @@ export interface CrudApi<T> {
   create: (input: unknown) => Promise<ApiResult<T>>;
   update: (id: string, input: unknown) => Promise<ApiResult<T>>;
   remove: (id: string) => Promise<ApiResult<{ id: string }>>;
+}
+
+export interface AuthApi {
+  status: () => Promise<ApiResult<AuthStatus>>;
+  setupPassword: (input: SetupPasswordInput) => Promise<ApiResult<AuthResult>>;
+  login: (input: LoginInput) => Promise<ApiResult<AuthResult>>;
+  changePassword: (input: ChangePasswordInput) => Promise<ApiResult<AuthResult>>;
 }
 
 export interface ContractAttachmentApi {
@@ -81,5 +90,7 @@ export interface ReportApi {
 export interface MaintenanceApi {
   info: () => Promise<ApiResult<MaintenanceInfo>>;
   backupDatabase: () => Promise<ApiResult<BackupResult>>;
+  restoreDatabase: () => Promise<ApiResult<RestoreResult | null>>;
+  undoLastRestore: () => Promise<ApiResult<UndoRestoreResult>>;
   exportExcel: () => Promise<ApiResult<ExportResult>>;
 }

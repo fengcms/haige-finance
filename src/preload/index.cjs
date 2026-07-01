@@ -1,6 +1,6 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
-const preloadVersion = '0.12.0';
+const preloadVersion = '0.14.0';
 const invoke = (channel, payload) => ipcRenderer.invoke(channel, payload);
 const crudApi = (namespace) => ({
   list: (query) => invoke(`${namespace}:list`, query),
@@ -13,6 +13,12 @@ contextBridge.exposeInMainWorld('haige', {
   version: preloadVersion,
   appPing: () => ipcRenderer.invoke('app:ping'),
   invoke,
+  auth: {
+    status: () => invoke('auth:status'),
+    setupPassword: (input) => invoke('auth:setup-password', input),
+    login: (input) => invoke('auth:login', input),
+    changePassword: (input) => invoke('auth:change-password', input),
+  },
   customers: crudApi('customers'),
   projects: crudApi('projects'),
   contracts: crudApi('contracts'),
@@ -48,6 +54,8 @@ contextBridge.exposeInMainWorld('haige', {
   maintenance: {
     info: () => invoke('maintenance:info'),
     backupDatabase: () => invoke('maintenance:backup-database'),
+    restoreDatabase: () => invoke('maintenance:restore-database'),
+    undoLastRestore: () => invoke('maintenance:undo-last-restore'),
     exportExcel: () => invoke('maintenance:export-excel'),
   },
 });

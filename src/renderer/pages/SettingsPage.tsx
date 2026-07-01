@@ -1,8 +1,9 @@
 import { CloudDownloadOutlined, FileExcelOutlined, ReloadOutlined } from '@ant-design/icons';
-import { Alert, Button, Card, Checkbox, Descriptions, Input, InputNumber, Modal, Select, Space, Table, Tabs, Tag, Typography, message } from 'antd';
+import { Alert, Button, Card, Checkbox, Descriptions, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Table, Tabs, Tag, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useEffect, useState } from 'react';
 import { MasterDataPage } from '@/renderer/components/MasterDataPage';
+import { authApi } from '@/renderer/api/authApi';
 import { dictionaryApi } from '@/renderer/api/dictionaryApi';
 import { categoryApi, type Category } from '@/renderer/api/masterDataApi';
 import { maintenanceApi } from '@/renderer/api/maintenanceApi';
@@ -23,6 +24,11 @@ export function SettingsPage() {
   const [info, setInfo] = useState<MaintenanceInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();
+
+  async function handlePasswordChanged() {
+    messageApi.success('密码已修改，请重新登录');
+    window.location.reload();
+  }
 
   async function loadInfo() {
     try {
@@ -57,6 +63,43 @@ export function SettingsPage() {
     }
   }
 
+  async function handleRestore() {
+    Modal.confirm({
+      title: '确认恢复数据库？',
+      content: '恢复会替换当前账本。系统会先自动备份当前数据库；恢复成功后建议重启应用。',
+      okText: '选择文件并恢复',
+      cancelText: '取消',
+      okButtonProps: { danger: true },
+      async onOk() {
+        try {
+          setLoading(true);
+          const result = await maintenanceApi.restoreDatabase();
+          if (result) {
+            messageApi.success(result.message);
+            await loadInfo();
+          }
+        } catch (error) {
+          messageApi.error(error instanceof Error ? error.message : '恢复失败');
+        } finally {
+          setLoading(false);
+        }
+      },
+    });
+  }
+
+  async function handleUndoRestore() {
+    try {
+      setLoading(true);
+      const result = await maintenanceApi.undoLastRestore();
+      messageApi.success(result.message);
+      await loadInfo();
+    } catch (error) {
+      messageApi.error(error instanceof Error ? error.message : '撤销恢复失败');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   useEffect(() => {
     void loadInfo();
   }, []);
@@ -70,7 +113,17 @@ export function SettingsPage() {
           {
             key: 'backup',
             label: '数据备份',
-            children: <BackupPanel info={info} loading={loading} loadInfo={loadInfo} handleBackup={handleBackup} handleExport={handleExport} />,
+            children: (
+              <BackupPanel
+                info={info}
+                loading={loading}
+                loadInfo={loadInfo}
+                handleBackup={handleBackup}
+                handleExport={handleExport}
+                handleRestore={handleRestore}
+                handleUndoRestore={handleUndoRestore}
+              />
+            ),
           },
           {
             key: 'categories',
@@ -87,9 +140,68 @@ export function SettingsPage() {
             label: '系统信息',
             children: <SystemInfoPanel info={info} loadInfo={loadInfo} />,
           },
+          {
+            key: 'security',
+            label: '安全设置',
+            children: <SecuritySettings onPasswordChanged={handlePasswordChanged} />,
+          },
         ]}
       />
     </Space>
+  );
+}
+
+function SecuritySettings({ onPasswordChanged }: { onPasswordChanged: () => void }) {
+  const [form] = Form.useForm();
+  const [loading, setLoading] = useState(false);
+  const [messageApi, contextHolder] = message.useMessage();
+
+  async function handleSubmit() {
+    const values = await form.validateFields();
+    try {
+      setLoading(true);
+      await authApi.changePassword(values);
+      form.resetFields();
+      onPasswordChanged();
+    } catch (error) {
+      messageApi.error(error instanceof Error ? error.message : '密码修改失败');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <Card>
+      {contextHolder}
+      <Space direction="vertical" size="middle" className="page-stack">
+        <Typography.Title level={4} style={{ margin: 0 }}>
+          安全设置
+        </Typography.Title>
+        <Descriptions bordered size="small" column={1}>
+          <Descriptions.Item label="当前用户">admin（本地管理员）</Descriptions.Item>
+        </Descriptions>
+        <Alert
+          type="info"
+          showIcon
+          message="本功能用于防止他人直接打开软件操作"
+          description="密码只保护应用入口，不加密 SQLite 数据库文件。忘记密码时需要按重置说明处理。"
+        />
+        <Form form={form} layout="vertical" style={{ maxWidth: 420 }}>
+          <Form.Item name="oldPassword" label="旧密码" rules={[{ required: true, message: '请输入旧密码' }]}>
+            <Input.Password />
+          </Form.Item>
+          <Form.Item name="newPassword" label="新密码" rules={[{ required: true, message: '请输入新密码' }]}>
+            <Input.Password />
+          </Form.Item>
+          <Form.Item name="confirmPassword" label="确认新密码" rules={[{ required: true, message: '请再次输入新密码' }]}>
+            <Input.Password />
+          </Form.Item>
+          <Button type="primary" loading={loading} onClick={handleSubmit}>
+            修改密码
+          </Button>
+        </Form>
+      </Space>
+    </Card>
   );
 }
 
@@ -99,6 +211,8 @@ function BackupPanel(props: {
   loadInfo: () => void;
   handleBackup: () => void;
   handleExport: () => void;
+  handleRestore: () => void;
+  handleUndoRestore: () => void;
 }) {
   return (
     <Card>
@@ -116,6 +230,20 @@ function BackupPanel(props: {
           <Button icon={<FileExcelOutlined />} loading={props.loading} onClick={props.handleExport}>
             导出 Excel
           </Button>
+          <Button danger loading={props.loading} onClick={props.handleRestore}>
+            恢复数据库
+          </Button>
+          <Popconfirm
+            title="确认撤销最近一次恢复？"
+            okText="撤销恢复"
+            cancelText="取消"
+            disabled={!props.info?.lastRestore}
+            onConfirm={props.handleUndoRestore}
+          >
+            <Button danger ghost loading={props.loading} disabled={!props.info?.lastRestore}>
+              撤销最近一次恢复
+            </Button>
+          </Popconfirm>
         </Space>
 
         {props.info ? (
@@ -123,14 +251,20 @@ function BackupPanel(props: {
             <Descriptions.Item label="数据库文件">{props.info.databasePath}</Descriptions.Item>
             <Descriptions.Item label="备份目录">{props.info.backupDir}</Descriptions.Item>
             <Descriptions.Item label="导出目录">{props.info.exportDir}</Descriptions.Item>
+            <Descriptions.Item label="恢复点目录">{props.info.restorePointDir}</Descriptions.Item>
+            <Descriptions.Item label="最近一次恢复">
+              {props.info.lastRestore
+                ? `${props.info.lastRestore.restoredAt}，来源：${props.info.lastRestore.sourcePath}`
+                : '暂无'}
+            </Descriptions.Item>
           </Descriptions>
         ) : null}
 
         <Alert
           type="warning"
           showIcon
-          message="恢复数据库暂未开放自动操作"
-          description={props.info?.restoreNote ?? '恢复数据库需要替换当前 SQLite 文件并重启应用，后续会单独做安全确认流程。'}
+          message="恢复数据库属于高风险操作"
+          description={props.info?.restoreNote ?? '恢复前会自动备份当前数据库，恢复成功后建议重启应用。'}
         />
       </Space>
     </Card>

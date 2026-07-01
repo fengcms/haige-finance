@@ -48,11 +48,13 @@ pnpm build
 pnpm db:init-test
 pnpm crud:smoke-test
 pnpm dictionary:smoke-test
+pnpm auth:smoke-test
 pnpm contract-attachment:smoke-test
 pnpm transaction:smoke-test
 pnpm project-stats:smoke-test
 pnpm report:smoke-test
 pnpm backup:smoke-test
+pnpm restore:smoke-test
 pnpm export:smoke-test
 ```
 

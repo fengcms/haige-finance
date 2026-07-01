@@ -39,7 +39,7 @@ const menuItems: ItemType[] = routes.map((route) => ({
   label: route.label,
 }));
 
-export function AppLayout() {
+export function AppLayout({ onLogout }: { onLogout: () => void }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
@@ -71,6 +71,9 @@ export function AppLayout() {
           <Typography.Title level={4} className="app-title">
             小公司本地账务管理系统
           </Typography.Title>
+          <Button className="logout-button" onClick={onLogout}>
+            退出登录
+          </Button>
         </Header>
         <Content className="app-content">
           <Outlet />

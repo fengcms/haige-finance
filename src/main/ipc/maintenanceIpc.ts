@@ -8,5 +8,7 @@ export function registerMaintenanceIpc() {
 
   registerIpcHandler('maintenance:info', () => backupService.getInfo());
   registerIpcHandler('maintenance:backup-database', () => backupService.backupDatabase());
+  registerIpcHandler('maintenance:restore-database', () => backupService.restoreDatabase());
+  registerIpcHandler('maintenance:undo-last-restore', () => backupService.undoLastRestore());
   registerIpcHandler('maintenance:export-excel', () => exportService.exportExcel());
 }

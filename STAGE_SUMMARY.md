@@ -1619,8 +1619,6 @@ pnpm dev
 
 ---
 
-## 下一阶段建议
-
 ### 补充修复：编辑面板回填问题
 
 发现问题：
@@ -1665,6 +1663,186 @@ pnpm verify
 2. 进入项目、合同、员工、账户、系统设置中的收支分类，分别编辑任意记录，确认回填正常。
 3. 进入财务管理，编辑任意流水，确认日期、金额、账户、分类等字段回填正常。
 4. 点击新增，确认不会残留上一条编辑数据。
+
+---
+
+## 阶段十四：数据库恢复与撤销恢复
+
+### 阶段目标
+
+在现有数据库备份能力基础上，增加安全恢复和撤销最近一次恢复能力。
+
+本阶段不做多版本恢复历史列表，不做恢复前差异对比，不支持从 Excel 恢复。
+
+### 已完成内容
+
+1. 数据备份栏目新增“恢复数据库”按钮。
+2. 数据备份栏目新增“撤销最近一次恢复”按钮。
+3. 数据恢复前会先校验恢复来源文件。
+4. 恢复来源文件必须包含必要业务表：
+   - `customers`
+   - `projects`
+   - `contracts`
+   - `accounts`
+   - `categories`
+   - `transactions`
+5. 恢复前自动生成恢复点备份。
+6. 恢复过程会关闭当前 SQLite 连接后替换数据库文件。
+7. 替换时会清理当前数据库的 WAL / SHM 文件。
+8. 恢复后重新执行 migration 和默认数据 seed。
+9. 恢复失败时自动回滚到恢复前备份。
+10. 成功恢复后记录最近一次恢复信息。
+11. 撤销最近一次恢复时，会先备份当前数据库。
+12. 撤销恢复失败时，会尝试回滚到撤销前备份。
+13. 系统设置显示恢复点目录和最近一次恢复信息。
+14. preload 增加恢复相关接口，版本提升：
+   - `window.haige.version = '0.13.0'`
+15. 新增恢复 smoke test。
+16. `pnpm verify` 已纳入恢复 smoke test。
+17. 调整数据库路径解析，避免 Electron run-as-node 测试环境无法加载主进程数据库模块。
+
+### 关键文件
+
+```text
+package.json
+DEVELOPMENT_GUIDE.md
+USER_GUIDE.md
+STAGE_SUMMARY.md
+
+src/shared/types/maintenance.ts
+src/shared/types/app.ts
+
+src/main/backup/backupService.ts
+src/main/db/index.ts
+src/main/ipc/maintenanceIpc.ts
+
+src/preload/index.cjs
+
+src/renderer/api/maintenanceApi.ts
+src/renderer/pages/SettingsPage.tsx
+
+scripts/restore-smoke-test.mjs
+```
+
+### 验证方式
+
+```bash
+pnpm typecheck
+pnpm build
+pnpm restore:smoke-test
+pnpm verify
+```
+
+### 手动验证建议
+
+1. 进入“系统设置 → 数据备份”。
+2. 点击“备份数据库”，生成一个备份文件。
+3. 修改或新增一条测试客户。
+4. 点击“恢复数据库”，选择刚才的备份文件。
+5. 确认恢复成功提示出现。
+6. 重启应用，确认数据回到备份时状态。
+7. 点击“撤销最近一次恢复”。
+8. 重启应用，确认数据回到恢复前状态。
+
+### 当前已知限制
+
+1. 当前只支持撤销最近一次成功恢复。
+2. 当前不提供恢复历史列表。
+3. 当前不做恢复前后差异预览。
+4. 恢复成功后建议重启应用，避免当前页面残留旧状态。
+
+## 阶段十五：本地单用户登录锁
+
+### 阶段目标
+
+为本地财务软件增加单用户登录保护，防止打开软件后直接查看或操作财务数据。
+
+本阶段不做多用户权限系统，不做数据库文件加密。
+
+### 已完成内容
+
+1. 新增固定本地管理员用户：
+   - `admin`
+2. 首次启动时，如果未设置密码，会进入设置密码页面。
+3. 已设置密码后，启动软件进入登录页面。
+4. 登录成功后才渲染主业务系统。
+5. 右侧顶部新增“退出登录”按钮。
+6. 点击退出登录后返回登录页面。
+7. 系统设置新增“安全设置”栏目。
+8. 安全设置支持修改登录密码。
+9. 修改密码需要输入旧密码。
+10. 修改密码成功后要求重新登录。
+11. 密码不明文保存。
+12. 密码使用 Node 内置 `crypto.scryptSync` 加盐哈希。
+13. 密码 hash、salt 和设置时间保存在 `app_meta`。
+14. 新增 auth IPC：
+   - `auth:status`
+   - `auth:setup-password`
+   - `auth:login`
+   - `auth:change-password`
+15. preload 增加认证相关接口，版本提升：
+   - `window.haige.version = '0.14.0'`
+16. 新增独立忘记密码重置说明：
+   - `PASSWORD_RESET_GUIDE.md`
+17. 新增 auth smoke test。
+18. `pnpm verify` 已纳入 auth smoke test。
+
+### 关键文件
+
+```text
+PASSWORD_RESET_GUIDE.md
+package.json
+DEVELOPMENT_GUIDE.md
+USER_GUIDE.md
+STAGE_SUMMARY.md
+
+src/shared/types/auth.ts
+src/shared/schemas/auth.ts
+src/shared/types/app.ts
+
+src/main/services/authService.ts
+src/main/ipc/authIpc.ts
+src/main/main.ts
+
+src/preload/index.cjs
+
+src/renderer/api/authApi.ts
+src/renderer/pages/LoginPage.tsx
+src/renderer/pages/SettingsPage.tsx
+src/renderer/layouts/AppLayout.tsx
+src/renderer/App.tsx
+src/renderer/styles/global.css
+
+scripts/auth-smoke-test.mjs
+```
+
+### 验证方式
+
+```bash
+pnpm typecheck
+pnpm build
+pnpm auth:smoke-test
+pnpm verify
+```
+
+### 手动验证建议
+
+1. 启动应用。
+2. 如首次使用，设置本地管理员密码。
+3. 退出应用后重新打开，确认需要输入密码。
+4. 输入错误密码，确认无法进入。
+5. 输入正确密码，确认进入系统。
+6. 点击右上角“退出登录”，确认返回登录页。
+7. 进入“系统设置 → 安全设置”修改密码。
+8. 修改成功后，用新密码重新登录。
+
+### 当前已知限制
+
+1. 登录锁用于防止直接打开软件操作，不加密 SQLite 数据库文件。
+2. 当前只有固定用户 `admin`，不支持多用户。
+3. 忘记密码需要按 `PASSWORD_RESET_GUIDE.md` 进行技术重置或恢复备份。
+
+---
 
 下一步建议进入“附件文件清理策略”或“安装包与发布体验完善”。
 
