@@ -14,6 +14,7 @@ import { ReportsPage } from './pages/ReportsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { LoginPage } from './pages/LoginPage';
 import { PayrollPage } from './pages/PayrollPage';
+import { ProjectFinancePage } from './pages/ProjectFinancePage';
 
 export default function App() {
   const [checking, setChecking] = useState(true);
@@ -56,6 +57,7 @@ export default function App() {
           <Route path="/projects" element={<ProjectsPage />} />
           <Route path="/contracts" element={<ContractsPage />} />
           <Route path="/employees" element={<EmployeesPage />} />
+          <Route path="/project-finance" element={<ProjectFinancePage />} />
           <Route path="/finance" element={<FinancePage />} />
           <Route path="/payroll" element={<PayrollPage />} />
           <Route path="/accounts" element={<AccountsPage />} />

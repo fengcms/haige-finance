@@ -2136,4 +2136,87 @@ pnpm verify
 
 ---
 
-下一步建议进入“阶段十七：工资报表增强”。
+## 项目收支阶段一：快捷录入
+
+### 阶段目标
+
+新增项目视角的收支管理入口，让项目收款、材料支出、人工支出和其他项目支出不必都从“财务管理”总流水页面录入。
+
+本阶段不新增数据库表，底层仍复用现有财务流水。
+
+### 已完成内容
+
+1. 新增独立规划文档：
+   - `PROJECT_FINANCE_PLAN.md`
+2. 规划项目收支三阶段：
+   - 第一阶段：项目收支快捷录入
+   - 第二阶段：项目费用分类体验优化
+   - 第三阶段：项目成本明细化
+3. 左侧菜单新增“项目收支”。
+4. 新增项目收支页面：
+   - 项目选择器
+   - 项目经营概览
+   - 项目相关流水列表
+5. 项目经营概览展示：
+   - 合同金额
+   - 已收款
+   - 已支出
+   - 应收款
+   - 当前毛利
+   - 预计毛利
+6. 支持快捷录入：
+   - 项目收款
+   - 材料支出
+   - 人工支出
+   - 其他项目支出
+7. 快捷录入会自动带入：
+   - 当前客户
+   - 当前项目
+   - 方向
+   - 资金性质
+   - 默认分类
+   - 是否影响项目应收
+   - 是否影响项目利润
+8. 项目收支保存后仍生成普通财务流水。
+9. 财务管理中可以查看这些流水。
+10. 项目统计和报表继续复用现有 `transactions` 口径。
+11. 新增 `project-finance:smoke-test`。
+12. `pnpm verify` 已纳入项目收支 smoke test。
+13. 用户手册补充项目收支说明。
+
+### 关键文件
+
+```text
+PROJECT_FINANCE_PLAN.md
+USER_GUIDE.md
+STAGE_SUMMARY.md
+DEVELOPMENT_GUIDE.md
+package.json
+
+src/shared/constants/routes.ts
+src/renderer/App.tsx
+src/renderer/layouts/AppLayout.tsx
+src/renderer/pages/ProjectFinancePage.tsx
+
+scripts/project-finance-smoke-test.mjs
+```
+
+### 验证方式
+
+```bash
+pnpm typecheck
+pnpm build
+pnpm project-finance:smoke-test
+pnpm verify
+```
+
+### 当前已知限制
+
+1. 第一阶段不做材料明细表。
+2. 第一阶段不做供应商和票据附件。
+3. 第一阶段只提供项目维度快捷录入，不替代财务管理总流水。
+4. 项目支出分类细分留到第二阶段。
+
+---
+
+下一步建议进入“项目收支阶段二：项目费用分类体验优化”，或回到“阶段十七：工资报表增强”。

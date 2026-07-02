@@ -52,6 +52,7 @@ pnpm auth:smoke-test
 pnpm contract-attachment:smoke-test
 pnpm transaction:smoke-test
 pnpm payroll:smoke-test
+pnpm project-finance:smoke-test
 pnpm project-stats:smoke-test
 pnpm report:smoke-test
 pnpm backup:smoke-test

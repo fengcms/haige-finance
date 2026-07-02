@@ -4,6 +4,7 @@ export const routes = [
   { path: '/projects', label: '客户项目', key: 'projects' },
   { path: '/contracts', label: '合同管理', key: 'contracts' },
   { path: '/employees', label: '员工管理', key: 'employees' },
+  { path: '/project-finance', label: '项目收支', key: 'projectFinance' },
   { path: '/finance', label: '财务管理', key: 'finance' },
   { path: '/payroll', label: '工资管理', key: 'payroll' },
   { path: '/accounts', label: '账户管理', key: 'accounts' },
