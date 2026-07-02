@@ -3,6 +3,7 @@ import { Button, Card, DatePicker, Drawer, Form, Image, Input, InputNumber, Moda
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { useEffect, useMemo, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { ImagePasteUpload } from '@/renderer/components/ImagePasteUpload';
 import { accountApi, employeeApi, supplierApi } from '@/renderer/api/masterDataApi';
 import { useDictionaries } from '@/renderer/hooks/useDictionaries';
@@ -133,6 +134,7 @@ const quickEntryOptions = (Object.keys(quickEntryConfigs) as QuickEntryType[]).m
 }));
 
 export function ProjectFinancePage() {
+  const location = useLocation();
   const [form] = Form.useForm();
   const [messageApi, contextHolder] = message.useMessage();
   const [projects, setProjects] = useState<ProjectStatsListItem[]>([]);
@@ -165,6 +167,7 @@ export function ProjectFinancePage() {
     () => projects.find((project) => project.id === selectedProjectId) ?? null,
     [projects, selectedProjectId],
   );
+  const initialProjectId = useMemo(() => new URLSearchParams(location.search).get('projectId') ?? undefined, [location.search]);
 
   async function loadBaseData() {
     const [projectResult, accountResult, employeeResult, supplierResult] = await Promise.all([
@@ -178,10 +181,11 @@ export function ProjectFinancePage() {
     setEmployees(employeeResult.items);
     setSuppliers(supplierResult.items);
 
-    if (!selectedProjectId && projectResult[0]) {
-      setSelectedProjectId(projectResult[0].id);
-      await loadDetail(projectResult[0].id);
-      await loadExpenseOrders(projectResult[0].id);
+    const initialProject = projectResult.find((project) => project.id === initialProjectId) ?? projectResult[0];
+    if (!selectedProjectId && initialProject) {
+      setSelectedProjectId(initialProject.id);
+      await loadDetail(initialProject.id);
+      await loadExpenseOrders(initialProject.id);
     }
   }
 

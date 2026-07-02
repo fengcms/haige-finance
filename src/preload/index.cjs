@@ -1,6 +1,6 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
-const preloadVersion = '0.20.0';
+const preloadVersion = '0.21.0';
 const invoke = (channel, payload) => ipcRenderer.invoke(channel, payload);
 const crudApi = (namespace) => ({
   list: (query) => invoke(`${namespace}:list`, query),
@@ -80,6 +80,9 @@ contextBridge.exposeInMainWorld('haige', {
       invoke('project-expense-attachments:create-from-data-url', { orderId, dataUrl, originalName }),
     preview: (id) => invoke('project-expense-attachments:preview', { id }),
     remove: (id) => invoke('project-expense-attachments:delete', { id }),
+  },
+  supplierAnalysis: {
+    get: (query) => invoke('supplier-analysis:get', query),
   },
   projectStats: {
     list: () => invoke('project-stats:list'),

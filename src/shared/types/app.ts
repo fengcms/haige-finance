@@ -15,6 +15,7 @@ import type { ProjectExpenseItem, ProjectExpenseOrder, ProjectExpenseOrderDetail
 import type { ProjectExpenseAttachment, ProjectExpenseAttachmentPreview } from './projectExpenseAttachment.js';
 import type { ReportBundle, ReportQuery } from './report.js';
 import type { AppSettings, UpdateAppSettingsInput } from './settings.js';
+import type { SupplierAnalysisBundle, SupplierAnalysisQuery } from './supplierAnalysis.js';
 import type { Supplier } from './supplier.js';
 import type { AccountBalance, Transaction, TransactionListItem, TransactionListQuery } from './transaction.js';
 
@@ -46,6 +47,7 @@ export interface HaigeApi {
   payroll: PayrollApi;
   projectExpenses: ProjectExpenseApi;
   projectExpenseAttachments: ProjectExpenseAttachmentApi;
+  supplierAnalysis: SupplierAnalysisApi;
   projectStats: ProjectStatsApi;
   reports: ReportApi;
   settings: SettingsApi;
@@ -129,6 +131,10 @@ export interface ProjectExpenseAttachmentApi {
   createFromDataUrl: (orderId: string, dataUrl: string, originalName?: string) => Promise<ApiResult<ProjectExpenseAttachment>>;
   preview: (id: string) => Promise<ApiResult<ProjectExpenseAttachmentPreview>>;
   remove: (id: string) => Promise<ApiResult<{ id: string }>>;
+}
+
+export interface SupplierAnalysisApi {
+  get: (query?: SupplierAnalysisQuery) => Promise<ApiResult<SupplierAnalysisBundle>>;
 }
 
 export interface ReportApi {

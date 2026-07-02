@@ -98,6 +98,15 @@ export const projectExpenseOrderStatusLabels: Record<string, string> = {
   voided: '已作废',
 };
 
+export const projectExpenseTypeLabels: Record<string, string> = {
+  material: '材料',
+  labor: '人工',
+  transport: '运输',
+  installation: '安装',
+  repair: '维修',
+  other: '其他',
+};
+
 export const payrollOperationActionLabels: Record<string, string> = {
   create: '创建',
   update: '更新',

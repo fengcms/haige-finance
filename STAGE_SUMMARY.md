@@ -2765,3 +2765,71 @@ pnpm typecheck
 pnpm project-expense:smoke-test
 pnpm build
 ```
+
+---
+
+## 供应商费用分析
+
+### 需求定位
+
+供应商相关需求按“小型团队、克制、少改动”的方向处理。本阶段不做应付账款、欠款、结算确认和付款流程，只把现有项目费用单数据按供应商维度拉出来做看板分析。
+
+### 已完成内容
+
+1. 新增 `SUPPLIER_ANALYSIS_PLAN.md`，明确本阶段做费用分析，不做复杂结算。
+2. 新增“供应商费用分析”菜单和页面。
+3. 支持按日期范围、供应商、项目、费用分类筛选。
+4. 指标卡展示：
+   - 供应商费用总额
+   - 涉及供应商数量
+   - 费用单数量
+   - 平均单笔金额
+5. 图表展示：
+   - 供应商费用排行
+   - 费用趋势
+   - 项目费用分布
+6. 明细列表展示费用单日期、供应商、客户、项目、费用分类、金额、附件数量和备注。
+7. 明细可跳转到对应项目的项目收支页面。
+8. 后端新增 supplier analysis repository/service/IPC/API。
+9. 新增 `supplier-analysis:smoke-test`，验证草稿和作废费用单不参与统计。
+
+### 统计规则
+
+```text
+只统计项目费用单：
+- deleted_at IS NULL
+- status = confirmed
+- voided_at IS NULL
+
+不统计：
+- 草稿费用单
+- 作废费用单
+- 已软删除费用单
+```
+
+### 关键文件
+
+```text
+SUPPLIER_ANALYSIS_PLAN.md
+src/shared/types/supplierAnalysis.ts
+src/shared/schemas/supplierAnalysis.ts
+src/main/repositories/supplierAnalysisRepository.ts
+src/main/services/supplierAnalysisService.ts
+src/main/ipc/supplierAnalysisIpc.ts
+src/renderer/api/supplierAnalysisApi.ts
+src/renderer/pages/SupplierAnalysisPage.tsx
+src/shared/constants/routes.ts
+src/preload/index.cjs
+src/shared/types/app.ts
+scripts/supplier-analysis-smoke-test.mjs
+package.json
+STAGE_SUMMARY.md
+```
+
+### 验证方式
+
+```bash
+pnpm typecheck
+pnpm supplier-analysis:smoke-test
+pnpm build
+```

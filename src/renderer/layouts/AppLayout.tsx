@@ -29,6 +29,7 @@ const iconMap: Record<string, React.ReactNode> = {
   contracts: <FileTextOutlined />,
   employees: <TeamOutlined />,
   suppliers: <TeamOutlined />,
+  supplierAnalysis: <BarChartOutlined />,
   projectFinance: <AccountBookOutlined />,
   finance: <WalletOutlined />,
   payroll: <DollarOutlined />,

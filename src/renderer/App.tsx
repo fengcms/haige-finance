@@ -15,6 +15,7 @@ import { SettingsPage } from './pages/SettingsPage';
 import { LoginPage } from './pages/LoginPage';
 import { PayrollPage } from './pages/PayrollPage';
 import { ProjectFinancePage } from './pages/ProjectFinancePage';
+import { SupplierAnalysisPage } from './pages/SupplierAnalysisPage';
 import { SuppliersPage } from './pages/SuppliersPage';
 
 export default function App() {
@@ -59,6 +60,7 @@ export default function App() {
           <Route path="/contracts" element={<ContractsPage />} />
           <Route path="/employees" element={<EmployeesPage />} />
           <Route path="/suppliers" element={<SuppliersPage />} />
+          <Route path="/supplier-analysis" element={<SupplierAnalysisPage />} />
           <Route path="/project-finance" element={<ProjectFinancePage />} />
           <Route path="/finance" element={<FinancePage />} />
           <Route path="/payroll" element={<PayrollPage />} />
