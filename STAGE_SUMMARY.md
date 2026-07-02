@@ -2219,4 +2219,158 @@ pnpm verify
 
 ---
 
-下一步建议进入“项目收支阶段二：项目费用分类体验优化”，或回到“阶段十七：工资报表增强”。
+## 项目收支阶段二：项目费用分类体验优化
+
+### 阶段目标
+
+增强项目收支页面的现场录入体验，让常见项目费用可以更快录入，并在页面中按类型查看小计和流水。
+
+### 已完成内容
+
+1. 项目收支快捷录入类型扩展为：
+   - 项目收款
+   - 材料支出
+   - 人工支出
+   - 运输费
+   - 安装费
+   - 维修返工
+   - 其他支出
+2. 运输费、安装费、维修返工默认按项目支出口径处理：
+   - `direction = expense`
+   - `fundType = project_expense`
+   - `affectsProjectProfit = true`
+   - `affectsReceivable = false`
+3. 项目收支页面新增分类小计：
+   - 项目收款
+   - 材料费
+   - 人工费
+   - 运输费
+   - 安装费
+   - 维修返工
+   - 其他支出
+4. 项目流水列表新增“项目类型”列。
+5. 项目流水支持按项目类型筛选。
+6. 新增费用类型仍然写入普通财务流水，不新增数据库表。
+7. `project-finance:smoke-test` 增加运输费、安装费、维修返工验证。
+8. 更新 `PROJECT_FINANCE_PLAN.md` 和 `USER_GUIDE.md`。
+
+### 关键文件
+
+```text
+PROJECT_FINANCE_PLAN.md
+USER_GUIDE.md
+STAGE_SUMMARY.md
+
+src/renderer/pages/ProjectFinancePage.tsx
+scripts/project-finance-smoke-test.mjs
+```
+
+### 验证方式
+
+```bash
+pnpm typecheck
+pnpm build
+pnpm project-finance:smoke-test
+pnpm verify
+```
+
+### 当前已知限制
+
+1. 费用类型目前通过快捷录入口径和备注前缀识别，不新增独立费用类型字段。
+2. 如果未来需要严格统计运输费、安装费等明细，建议在第三阶段新增项目费用单或费用类型字段。
+3. 当前还不支持材料清单、供应商、票据附件。
+
+---
+
+## 供应商管理阶段一：基础资料
+
+### 阶段目标
+
+在项目费用单和供应商对账之前，先建立供应商基础资料模块。
+
+本阶段不做采购单、不做应付账款、不做供应商统计。
+
+### 已完成内容
+
+1. 新增供应商模块计划文档：
+   - `SUPPLIER_MODULE_PLAN.md`
+2. 新增供应商共享枚举：
+   - `supplierTypeOptions`
+   - `supplierStatusOptions`
+3. 新增供应商共享类型：
+   - `Supplier`
+4. 新增供应商 zod schema：
+   - `supplierSchema`
+   - `createSupplierSchema`
+5. SQLite 新增 `suppliers` 表。
+6. Drizzle schema 新增 `suppliers` 表定义。
+7. 通用基础资料 Repository 接入供应商。
+8. 通用基础资料 Service 接入供应商。
+9. MasterData IPC 接入供应商。
+10. preload 暴露：
+    - `window.haige.suppliers`
+11. renderer API 新增：
+    - `supplierApi`
+12. 左侧菜单新增“供应商管理”。
+13. 新增供应商管理页面。
+14. 供应商管理支持：
+    - 列表
+    - 新增
+    - 编辑
+    - 搜索
+    - 软删除
+15. `db:init-test` 增加 `suppliers` 表检查。
+16. 新增 `supplier:smoke-test`。
+17. `pnpm verify` 纳入供应商 smoke test。
+18. 用户手册补充供应商管理说明。
+
+### 关键文件
+
+```text
+SUPPLIER_MODULE_PLAN.md
+USER_GUIDE.md
+STAGE_SUMMARY.md
+DEVELOPMENT_GUIDE.md
+package.json
+
+src/shared/constants/enums.ts
+src/shared/types/supplier.ts
+src/shared/schemas/supplier.ts
+src/shared/types/app.ts
+src/shared/constants/routes.ts
+
+src/main/db/migrations.ts
+src/main/db/schema.ts
+src/main/repositories/masterDataRepository.ts
+src/main/services/masterDataService.ts
+src/main/ipc/masterDataIpc.ts
+
+src/preload/index.cjs
+src/renderer/api/masterDataApi.ts
+src/renderer/layouts/AppLayout.tsx
+src/renderer/App.tsx
+src/renderer/pages/SuppliersPage.tsx
+src/renderer/utils/labels.ts
+
+scripts/db-init-test.mjs
+scripts/supplier-smoke-test.mjs
+```
+
+### 验证方式
+
+```bash
+pnpm typecheck
+pnpm db:init-test
+pnpm supplier:smoke-test
+pnpm verify
+```
+
+### 当前已知限制
+
+1. 供应商类型目前使用固定枚举，不接入字典管理。
+2. 供应商暂未关联项目费用单。
+3. 暂无供应商采购、付款、欠款和对账统计。
+
+---
+
+下一步建议进入“项目收支阶段三：项目成本明细化”，将项目费用单关联供应商。

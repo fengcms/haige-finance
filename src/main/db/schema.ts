@@ -16,6 +16,8 @@ import type {
   PayrollOperationAction,
   ProjectStatus,
   ProjectType,
+  SupplierStatus,
+  SupplierType,
   TransactionDirection,
   TransactionStatus,
 } from '../../shared/constants/enums.js';
@@ -162,6 +164,27 @@ export const employees = sqliteTable(
     nameIdx: index('idx_employees_name').on(table.name),
     phoneIdx: index('idx_employees_phone').on(table.phone),
     statusIdx: index('idx_employees_status').on(table.status),
+  }),
+);
+
+export const suppliers = sqliteTable(
+  'suppliers',
+  {
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    contactName: text('contact_name'),
+    phone: text('phone'),
+    address: text('address'),
+    type: text('type').$type<SupplierType>().notNull().default('material'),
+    status: text('status').$type<SupplierStatus>().notNull().default('active'),
+    remark: text('remark'),
+    ...timestamps,
+  },
+  (table) => ({
+    nameIdx: index('idx_suppliers_name').on(table.name),
+    phoneIdx: index('idx_suppliers_phone').on(table.phone),
+    typeIdx: index('idx_suppliers_type').on(table.type),
+    statusIdx: index('idx_suppliers_status').on(table.status),
   }),
 );
 

@@ -12,6 +12,7 @@ import type { PayrollBatch, PayrollBatchDetail, PayrollBatchListQuery, PayrollIt
 import type { CustomerProject } from './project.js';
 import type { ProjectStatsDetail, ProjectStatsListItem } from './projectStats.js';
 import type { ReportBundle, ReportQuery } from './report.js';
+import type { Supplier } from './supplier.js';
 import type { AccountBalance, Transaction, TransactionListItem, TransactionListQuery } from './transaction.js';
 
 export interface PingResult {
@@ -35,6 +36,7 @@ export interface HaigeApi {
   contractAttachments: ContractAttachmentApi;
   dictionaries: DictionaryApi;
   employees: CrudApi<Employee>;
+  suppliers: CrudApi<Supplier>;
   accounts: CrudApi<Account>;
   categories: CrudApi<Category>;
   transactions: TransactionApi;

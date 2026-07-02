@@ -19,6 +19,12 @@ export type ContractAttachmentSourceType = (typeof contractAttachmentSourceTypeO
 export const employeeStatusOptions = ['active', 'inactive', 'left'] as const;
 export type EmployeeStatus = (typeof employeeStatusOptions)[number];
 
+export const supplierTypeOptions = ['material', 'labor', 'transport', 'installation', 'other'] as const;
+export type SupplierType = (typeof supplierTypeOptions)[number];
+
+export const supplierStatusOptions = ['active', 'inactive'] as const;
+export type SupplierStatus = (typeof supplierStatusOptions)[number];
+
 export const accountTypeOptions = ['cash', 'bank', 'wechat', 'alipay', 'shareholder', 'other'] as const;
 export type AccountType = (typeof accountTypeOptions)[number];
 

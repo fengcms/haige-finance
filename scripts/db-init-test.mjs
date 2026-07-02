@@ -47,6 +47,7 @@ const requiredTables = [
   'contracts',
   'contract_attachments',
   'employees',
+  'suppliers',
   'accounts',
   'categories',
   'transactions',
@@ -113,6 +114,10 @@ for (const columnName of ['status', 'voided_at', 'void_reason', 'deleted_at']) {
 
 for (const columnName of ['contract_id', 'file_type', 'source_type', 'stored_path', 'deleted_at']) {
   assertColumn('contract_attachments', columnName);
+}
+
+for (const columnName of ['name', 'contact_name', 'phone', 'address', 'type', 'status', 'remark', 'deleted_at']) {
+  assertColumn('suppliers', columnName);
 }
 
 for (const columnName of ['dict_type', 'code', 'name', 'sort_order', 'status', 'is_system', 'deleted_at']) {

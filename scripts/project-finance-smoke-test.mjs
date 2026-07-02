@@ -90,6 +90,27 @@ transactions.create({
   remark: '人工支出 smoke test',
 });
 
+for (const [amountCents, remark] of [
+  [5000, '项目运输费 smoke test'],
+  [7000, '项目安装费 smoke test'],
+  [3000, '项目维修返工 smoke test'],
+]) {
+  transactions.create({
+    direction: 'expense',
+    amountCents,
+    occurredDate: '2026-07-02',
+    accountId: 'account_cash',
+    categoryId: 'category_other_expense',
+    fundType: 'project_expense',
+    isCompanyFund: true,
+    affectsReceivable: false,
+    affectsProjectProfit: true,
+    customerId: customer.id,
+    projectId: project.id,
+    remark,
+  });
+}
+
 const detail = projectStats.detail(project.id);
 
 if (detail.stats.contractAmountCents !== 300000) {
@@ -100,16 +121,20 @@ if (detail.stats.receivedCents !== 120000) {
   throw new Error(`Received amount should be 120000, got ${detail.stats.receivedCents}`);
 }
 
-if (detail.stats.expenseCents !== 50000) {
-  throw new Error(`Project expense should be 50000, got ${detail.stats.expenseCents}`);
+if (detail.stats.expenseCents !== 65000) {
+  throw new Error(`Project expense should be 65000, got ${detail.stats.expenseCents}`);
 }
 
 if (detail.stats.receivableCents !== 180000) {
   throw new Error(`Receivable should be 180000, got ${detail.stats.receivableCents}`);
 }
 
-if (detail.stats.expectedProfitCents !== 250000) {
-  throw new Error(`Expected profit should be 250000, got ${detail.stats.expectedProfitCents}`);
+if (detail.stats.expectedProfitCents !== 235000) {
+  throw new Error(`Expected profit should be 235000, got ${detail.stats.expectedProfitCents}`);
+}
+
+if (detail.transactions.length !== 6) {
+  throw new Error(`Project finance transactions should be 6, got ${detail.transactions.length}`);
 }
 
 closeDatabase();

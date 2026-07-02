@@ -13,7 +13,7 @@ import type { Employee } from '@/shared/types/employee';
 import type { ProjectStatsDetail, ProjectStatsListItem } from '@/shared/types/projectStats';
 import type { TransactionListItem } from '@/shared/types/transaction';
 
-type QuickEntryType = 'receipt' | 'material' | 'labor' | 'other';
+type QuickEntryType = 'receipt' | 'material' | 'labor' | 'transport' | 'installation' | 'repair' | 'other';
 
 const quickEntryConfigs: Record<
   QuickEntryType,
@@ -26,6 +26,7 @@ const quickEntryConfigs: Record<
     affectsReceivable: boolean;
     affectsProjectProfit: boolean;
     defaultRemark: string;
+    summaryLabel: string;
   }
 > = {
   receipt: {
@@ -37,6 +38,7 @@ const quickEntryConfigs: Record<
     affectsReceivable: true,
     affectsProjectProfit: false,
     defaultRemark: '项目收款',
+    summaryLabel: '项目收款',
   },
   material: {
     title: '新增材料支出',
@@ -47,6 +49,7 @@ const quickEntryConfigs: Record<
     affectsReceivable: false,
     affectsProjectProfit: true,
     defaultRemark: '项目材料支出',
+    summaryLabel: '材料费',
   },
   labor: {
     title: '新增人工支出',
@@ -57,18 +60,58 @@ const quickEntryConfigs: Record<
     affectsReceivable: false,
     affectsProjectProfit: true,
     defaultRemark: '项目人工支出',
+    summaryLabel: '人工费',
+  },
+  transport: {
+    title: '新增运输支出',
+    buttonLabel: '运输费',
+    direction: 'expense',
+    categoryId: 'category_other_expense',
+    fundType: 'project_expense',
+    affectsReceivable: false,
+    affectsProjectProfit: true,
+    defaultRemark: '项目运输费',
+    summaryLabel: '运输费',
+  },
+  installation: {
+    title: '新增安装支出',
+    buttonLabel: '安装费',
+    direction: 'expense',
+    categoryId: 'category_other_expense',
+    fundType: 'project_expense',
+    affectsReceivable: false,
+    affectsProjectProfit: true,
+    defaultRemark: '项目安装费',
+    summaryLabel: '安装费',
+  },
+  repair: {
+    title: '新增维修返工支出',
+    buttonLabel: '维修返工',
+    direction: 'expense',
+    categoryId: 'category_other_expense',
+    fundType: 'project_expense',
+    affectsReceivable: false,
+    affectsProjectProfit: true,
+    defaultRemark: '项目维修返工',
+    summaryLabel: '维修返工',
   },
   other: {
     title: '新增其他项目支出',
     buttonLabel: '其他支出',
     direction: 'expense',
     categoryId: 'category_other_expense',
-    fundType: 'other_expense',
+    fundType: 'project_expense',
     affectsReceivable: false,
     affectsProjectProfit: true,
     defaultRemark: '其他项目支出',
+    summaryLabel: '其他支出',
   },
 };
+
+const quickEntryOptions = (Object.keys(quickEntryConfigs) as QuickEntryType[]).map((type) => ({
+  value: type,
+  label: quickEntryConfigs[type].summaryLabel,
+}));
 
 export function ProjectFinancePage() {
   const [form] = Form.useForm();
@@ -81,6 +124,7 @@ export function ProjectFinancePage() {
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [quickType, setQuickType] = useState<QuickEntryType>('receipt');
+  const [transactionTypeFilter, setTransactionTypeFilter] = useState<QuickEntryType | 'all'>('all');
 
   const selectedProject = useMemo(
     () => projects.find((project) => project.id === selectedProjectId) ?? null,
@@ -194,6 +238,37 @@ export function ProjectFinancePage() {
     }
   }
 
+  const categorizedTransactions = useMemo(() => {
+    return (detail?.transactions ?? []).map((transaction) => ({
+      ...transaction,
+      projectFinanceType: getProjectFinanceType(transaction),
+    }));
+  }, [detail]);
+
+  const filteredTransactions = useMemo(() => {
+    if (transactionTypeFilter === 'all') {
+      return categorizedTransactions;
+    }
+
+    return categorizedTransactions.filter((transaction) => transaction.projectFinanceType === transactionTypeFilter);
+  }, [categorizedTransactions, transactionTypeFilter]);
+
+  const financeSummary = useMemo(() => {
+    const summary = Object.fromEntries(
+      (Object.keys(quickEntryConfigs) as QuickEntryType[]).map((type) => [type, 0]),
+    ) as Record<QuickEntryType, number>;
+
+    for (const transaction of categorizedTransactions) {
+      if (transaction.status !== 'normal') {
+        continue;
+      }
+
+      summary[transaction.projectFinanceType] += transaction.amountCents;
+    }
+
+    return summary;
+  }, [categorizedTransactions]);
+
   const columns = useMemo<ColumnsType<TransactionListItem>>(
     () => [
       { title: '日期', dataIndex: 'occurredDate', width: 110 },
@@ -207,6 +282,12 @@ export function ProjectFinancePage() {
       { title: '账户', dataIndex: 'accountName', width: 130 },
       { title: '分类', dataIndex: 'categoryName', width: 130 },
       { title: '资金性质', dataIndex: 'fundType', width: 120, render: (value) => fundTypeLabels[String(value)] ?? value },
+      {
+        title: '项目类型',
+        dataIndex: 'projectFinanceType',
+        width: 120,
+        render: (value) => quickEntryConfigs[value as QuickEntryType]?.summaryLabel ?? '-',
+      },
       { title: '员工', dataIndex: 'employeeName', width: 120, render: (value) => value || '-' },
       {
         title: '状态',
@@ -273,18 +354,34 @@ export function ProjectFinancePage() {
         </Card>
       </Space>
 
+      <Space wrap>
+        {quickEntryOptions.map((option) => (
+          <Card key={option.value} size="small" style={{ width: 150 }}>
+            <Statistic title={option.label} value={formatYuan(financeSummary[option.value as QuickEntryType] ?? 0)} />
+          </Card>
+        ))}
+      </Space>
+
       <Card>
         <Space direction="vertical" size="middle" className="page-stack">
           <Space className="toolbar" wrap>
-            <Typography.Title level={5} style={{ margin: 0 }}>
-              {detail ? `${detail.project.customerName || '-'} / ${detail.project.name}` : '项目流水'}
-            </Typography.Title>
-            {detail ? <Tag>{receiptStatusLabels[detail.stats.receiptStatus]}</Tag> : null}
+            <Space wrap>
+              <Typography.Title level={5} style={{ margin: 0 }}>
+                {detail ? `${detail.project.customerName || '-'} / ${detail.project.name}` : '项目流水'}
+              </Typography.Title>
+              {detail ? <Tag>{receiptStatusLabels[detail.stats.receiptStatus]}</Tag> : null}
+            </Space>
+            <Select
+              value={transactionTypeFilter}
+              style={{ width: 150 }}
+              options={[{ value: 'all', label: '全部类型' }, ...quickEntryOptions]}
+              onChange={setTransactionTypeFilter}
+            />
           </Space>
           <Table<TransactionListItem>
             rowKey="id"
             loading={loading}
-            dataSource={detail?.transactions ?? []}
+            dataSource={filteredTransactions}
             columns={columns}
             pagination={{ pageSize: 20, showTotal: (count) => `共 ${count} 条` }}
             scroll={{ x: 'max-content' }}
@@ -329,4 +426,28 @@ export function ProjectFinancePage() {
       </Modal>
     </Space>
   );
+}
+
+function getProjectFinanceType(transaction: TransactionListItem): QuickEntryType {
+  const remark = transaction.remark ?? '';
+
+  if (transaction.direction === 'income' && transaction.fundType === 'customer_payment') {
+    return 'receipt';
+  }
+
+  for (const type of ['transport', 'installation', 'repair'] as QuickEntryType[]) {
+    if (remark.startsWith(quickEntryConfigs[type].defaultRemark)) {
+      return type;
+    }
+  }
+
+  if (transaction.categoryId === 'category_project_material') {
+    return 'material';
+  }
+
+  if (transaction.categoryId === 'category_salary' || transaction.fundType === 'salary') {
+    return 'labor';
+  }
+
+  return 'other';
 }

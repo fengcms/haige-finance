@@ -37,6 +37,7 @@ contextBridge.exposeInMainWorld('haige', {
     update: (id, input) => invoke('dictionaries:update', { id, input }),
   },
   employees: crudApi('employees'),
+  suppliers: crudApi('suppliers'),
   accounts: crudApi('accounts'),
   categories: crudApi('categories'),
   transactions: {

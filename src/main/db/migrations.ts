@@ -147,6 +147,27 @@ export const createCoreTablesSql = `
   CREATE INDEX IF NOT EXISTS idx_employees_phone ON employees(phone);
   CREATE INDEX IF NOT EXISTS idx_employees_status ON employees(status);
 
+  CREATE TABLE IF NOT EXISTS suppliers (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    contact_name TEXT,
+    phone TEXT,
+    address TEXT,
+    type TEXT NOT NULL DEFAULT 'material',
+    status TEXT NOT NULL DEFAULT 'active',
+    remark TEXT,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    deleted_at INTEGER,
+    CHECK (type IN ('material', 'labor', 'transport', 'installation', 'other')),
+    CHECK (status IN ('active', 'inactive'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_suppliers_name ON suppliers(name);
+  CREATE INDEX IF NOT EXISTS idx_suppliers_phone ON suppliers(phone);
+  CREATE INDEX IF NOT EXISTS idx_suppliers_type ON suppliers(type);
+  CREATE INDEX IF NOT EXISTS idx_suppliers_status ON suppliers(status);
+
   CREATE TABLE IF NOT EXISTS accounts (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,

@@ -21,7 +21,7 @@ const deletePayloadSchema = z.object({
   id: z.string().min(1),
 });
 
-const entityNames: EntityName[] = ['customers', 'projects', 'contracts', 'employees', 'accounts', 'categories'];
+const entityNames: EntityName[] = ['customers', 'projects', 'contracts', 'employees', 'suppliers', 'accounts', 'categories'];
 
 export function registerMasterDataIpc() {
   const service = new MasterDataService();

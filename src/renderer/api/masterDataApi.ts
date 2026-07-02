@@ -5,6 +5,7 @@ import type { Contract } from '@/shared/types/contract';
 import type { Customer } from '@/shared/types/customer';
 import type { Employee } from '@/shared/types/employee';
 import type { CustomerProject } from '@/shared/types/project';
+import type { Supplier } from '@/shared/types/supplier';
 import { unwrapResult } from './client';
 
 type ProjectListItem = CustomerProject & { customerName?: string };
@@ -38,6 +39,13 @@ export const employeeApi = {
   remove: (id: string) => unwrapResult(getHaigeApi().employees.remove(id)),
 };
 
+export const supplierApi = {
+  list: (query?: ListQuery) => unwrapResult(getHaigeApi().suppliers.list(query)),
+  create: (input: unknown) => unwrapResult(getHaigeApi().suppliers.create(input)),
+  update: (id: string, input: unknown) => unwrapResult(getHaigeApi().suppliers.update(id, input)),
+  remove: (id: string) => unwrapResult(getHaigeApi().suppliers.remove(id)),
+};
+
 export const accountApi = {
   list: (query?: ListQuery) => unwrapResult(getHaigeApi().accounts.list(query)),
   create: (input: unknown) => unwrapResult(getHaigeApi().accounts.create(input)),
@@ -52,7 +60,7 @@ export const categoryApi = {
   remove: (id: string) => unwrapResult(getHaigeApi().categories.remove(id)),
 };
 
-export type { Account, Category, Contract, ContractListItem, Customer, CustomerProject, Employee, ProjectListItem };
+export type { Account, Category, Contract, ContractListItem, Customer, CustomerProject, Employee, ProjectListItem, Supplier };
 
 function getHaigeApi() {
   if (!window.haige) {

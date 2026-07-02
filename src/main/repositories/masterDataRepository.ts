@@ -2,7 +2,7 @@ import type Database from 'better-sqlite3';
 import { getSqlite } from '../db/index.js';
 import type { ListQuery, ListResult } from '../../shared/types/api.js';
 
-export type EntityName = 'customers' | 'projects' | 'contracts' | 'employees' | 'accounts' | 'categories';
+export type EntityName = 'customers' | 'projects' | 'contracts' | 'employees' | 'suppliers' | 'accounts' | 'categories';
 
 interface EntityConfig {
   table: string;
@@ -90,6 +90,23 @@ const entityConfigs: Record<EntityName, EntityConfig> = {
       deletedAt: 'deleted_at',
     },
     searchableColumns: ['name', 'phone', 'position'],
+  },
+  suppliers: {
+    table: 'suppliers',
+    columns: {
+      id: 'id',
+      name: 'name',
+      contactName: 'contact_name',
+      phone: 'phone',
+      address: 'address',
+      type: 'type',
+      status: 'status',
+      remark: 'remark',
+      createdAt: 'created_at',
+      updatedAt: 'updated_at',
+      deletedAt: 'deleted_at',
+    },
+    searchableColumns: ['name', 'contact_name', 'phone', 'address'],
   },
   accounts: {
     table: 'accounts',

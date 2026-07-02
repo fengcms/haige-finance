@@ -50,6 +50,7 @@ pnpm crud:smoke-test
 pnpm dictionary:smoke-test
 pnpm auth:smoke-test
 pnpm contract-attachment:smoke-test
+pnpm supplier:smoke-test
 pnpm transaction:smoke-test
 pnpm payroll:smoke-test
 pnpm project-finance:smoke-test

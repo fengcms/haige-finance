@@ -5,6 +5,7 @@ import { createContractSchema } from '../../shared/schemas/contract.js';
 import { createCustomerSchema } from '../../shared/schemas/customer.js';
 import { createEmployeeSchema } from '../../shared/schemas/employee.js';
 import { createProjectSchema } from '../../shared/schemas/project.js';
+import { createSupplierSchema } from '../../shared/schemas/supplier.js';
 import type { ListQuery, ListResult } from '../../shared/types/api.js';
 import type { Account } from '../../shared/types/account.js';
 import type { Category } from '../../shared/types/category.js';
@@ -12,6 +13,7 @@ import type { Contract } from '../../shared/types/contract.js';
 import type { Customer } from '../../shared/types/customer.js';
 import type { Employee } from '../../shared/types/employee.js';
 import type { CustomerProject } from '../../shared/types/project.js';
+import type { Supplier } from '../../shared/types/supplier.js';
 import { MasterDataRepository, type EntityName } from '../repositories/masterDataRepository.js';
 
 type EntityMap = {
@@ -19,6 +21,7 @@ type EntityMap = {
   projects: CustomerProject & { customerName?: string };
   contracts: Contract & { customerName?: string; projectName?: string };
   employees: Employee;
+  suppliers: Supplier;
   accounts: Account;
   categories: Category;
 };
@@ -30,6 +33,7 @@ const createSchemas = {
   projects: createProjectSchema,
   contracts: createContractSchema,
   employees: createEmployeeSchema,
+  suppliers: createSupplierSchema,
   accounts: createAccountSchema,
   categories: createCategorySchema,
 } satisfies Record<EntityName, z.ZodTypeAny>;
@@ -39,6 +43,7 @@ const updateSchemas = {
   projects: createProjectSchema.partial(),
   contracts: createContractSchema.partial(),
   employees: createEmployeeSchema.partial(),
+  suppliers: createSupplierSchema.partial(),
   accounts: createAccountSchema.partial(),
   categories: createCategorySchema.partial(),
 } satisfies Record<EntityName, z.ZodTypeAny>;

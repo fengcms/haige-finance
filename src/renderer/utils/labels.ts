@@ -37,6 +37,19 @@ export const employeeStatusLabels: Record<string, string> = {
   left: '离职',
 };
 
+export const supplierTypeLabels: Record<string, string> = {
+  material: '材料商',
+  labor: '人工班组',
+  transport: '运输',
+  installation: '安装',
+  other: '其他',
+};
+
+export const supplierStatusLabels: Record<string, string> = {
+  active: '启用',
+  inactive: '停用',
+};
+
 export const accountTypeLabels: Record<string, string> = {
   cash: '现金',
   bank: '银行卡',
