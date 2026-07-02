@@ -1,4 +1,5 @@
 import type Database from 'better-sqlite3';
+import { maxPageSize } from '../../shared/constants/pagination.js';
 import type { ListResult } from '../../shared/types/api.js';
 import type { AccountBalance, TransactionListItem, TransactionListQuery } from '../../shared/types/transaction.js';
 import { getSqlite } from '../db/index.js';
@@ -34,7 +35,7 @@ export class TransactionRepository {
 
   list(query: TransactionListQuery = {}): ListResult<TransactionListItem> {
     const page = Math.max(1, Number(query.page ?? 1));
-    const pageSize = Math.max(1, Math.min(100, Number(query.pageSize ?? 50)));
+    const pageSize = Math.max(1, Math.min(maxPageSize, Number(query.pageSize ?? 20)));
     const offset = (page - 1) * pageSize;
     const params: Record<string, unknown> = { limit: pageSize, offset };
     const where = ['transactions.deleted_at IS NULL'];

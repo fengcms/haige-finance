@@ -4,8 +4,10 @@ import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { useEffect, useMemo, useState } from 'react';
 import { accountApi, categoryApi, customerApi, employeeApi, projectApi } from '@/renderer/api/masterDataApi';
+import { useDefaultPageSize } from '@/renderer/hooks/useDefaultPageSize';
 import { transactionApi } from '@/renderer/api/transactionApi';
 import { formatYuan, parseYuan } from '@/renderer/utils/money';
+import { normalizePageSize, pageSizeOptions } from '@/shared/constants/pagination';
 import {
   fundTypeLabels,
   toOptions,
@@ -35,6 +37,9 @@ export function FinancePage() {
   const [loading, setLoading] = useState(false);
   const [total, setTotal] = useState(0);
   const [keyword, setKeyword] = useState('');
+  const defaultPageSize = useDefaultPageSize();
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(defaultPageSize);
   const [direction, setDirection] = useState<string>();
   const [status, setStatus] = useState<string>();
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>(null);
@@ -59,7 +64,7 @@ export function FinancePage() {
     setEmployees(employeeResult.items);
   }
 
-  async function load() {
+  async function load(nextPage = page, nextPageSize = pageSize) {
     try {
       setLoading(true);
       const [listResult, balanceResult] = await Promise.all([
@@ -69,8 +74,8 @@ export function FinancePage() {
           status: status as any,
           startDate: dateRange?.[0].format('YYYY-MM-DD'),
           endDate: dateRange?.[1].format('YYYY-MM-DD'),
-          page: 1,
-          pageSize: 100,
+          page: nextPage,
+          pageSize: nextPageSize,
         }),
         transactionApi.accountBalances(),
       ]);
@@ -91,8 +96,10 @@ export function FinancePage() {
   }, []);
 
   useEffect(() => {
-    void load();
-  }, []);
+    setPage(1);
+    setPageSize(defaultPageSize);
+    void load(1, defaultPageSize);
+  }, [defaultPageSize]);
 
   function syncTransactionFormValues() {
     if (editingItem) {
@@ -145,7 +152,7 @@ export function FinancePage() {
       setOpen(false);
       setEditingItem(null);
       form.resetFields();
-      await load();
+      await load(page, pageSize);
     } catch (error) {
       messageApi.error(error instanceof Error ? error.message : '保存失败');
     }
@@ -182,7 +189,7 @@ export function FinancePage() {
       messageApi.success('流水已作废');
       setVoidOpen(false);
       setVoidingItem(null);
-      await load();
+      await load(page, pageSize);
     } catch (error) {
       messageApi.error(error instanceof Error ? error.message : '作废失败');
     }
@@ -192,7 +199,7 @@ export function FinancePage() {
     try {
       await transactionApi.remove(id);
       messageApi.success('流水已删除');
-      await load();
+      await load(page, pageSize);
     } catch (error) {
       messageApi.error(error instanceof Error ? error.message : '删除失败');
     }
@@ -274,13 +281,42 @@ export function FinancePage() {
               placeholder="搜索流水号、备注、客户、项目"
               value={keyword}
               onChange={(event) => setKeyword(event.target.value)}
-              onSearch={() => load()}
+              onSearch={() => {
+                setPage(1);
+                void load(1, pageSize);
+              }}
               style={{ width: 280 }}
             />
-            <Select allowClear placeholder="方向" value={direction} options={toOptions(transactionDirectionLabels)} style={{ width: 120 }} onChange={setDirection} />
-            <Select allowClear placeholder="状态" value={status} options={toOptions(transactionStatusLabels)} style={{ width: 120 }} onChange={setStatus} />
-            <RangePicker value={dateRange} onChange={(value) => setDateRange(value as [dayjs.Dayjs, dayjs.Dayjs] | null)} />
-            <Button icon={<ReloadOutlined />} onClick={() => load()}>
+            <Select
+              allowClear
+              placeholder="方向"
+              value={direction}
+              options={toOptions(transactionDirectionLabels)}
+              style={{ width: 120 }}
+              onChange={(value) => {
+                setDirection(value);
+                setPage(1);
+              }}
+            />
+            <Select
+              allowClear
+              placeholder="状态"
+              value={status}
+              options={toOptions(transactionStatusLabels)}
+              style={{ width: 120 }}
+              onChange={(value) => {
+                setStatus(value);
+                setPage(1);
+              }}
+            />
+            <RangePicker
+              value={dateRange}
+              onChange={(value) => {
+                setDateRange(value as [dayjs.Dayjs, dayjs.Dayjs] | null);
+                setPage(1);
+              }}
+            />
+            <Button icon={<ReloadOutlined />} onClick={() => load(page, pageSize)}>
               刷新
             </Button>
             <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
@@ -293,7 +329,20 @@ export function FinancePage() {
             loading={loading}
             columns={columns}
             dataSource={items}
-            pagination={{ total, pageSize: 100, showTotal: (count) => `共 ${count} 条` }}
+            pagination={{
+              current: page,
+              total,
+              pageSize,
+              showSizeChanger: true,
+              pageSizeOptions: pageSizeOptions.map(String),
+              showTotal: (count) => `共 ${count} 条`,
+              onChange: (nextPage, nextPageSize) => {
+                const normalizedPageSize = normalizePageSize(nextPageSize);
+                setPage(nextPage);
+                setPageSize(normalizedPageSize);
+                void load(nextPage, normalizedPageSize);
+              },
+            }}
             scroll={{ x: 'max-content' }}
           />
         </Space>

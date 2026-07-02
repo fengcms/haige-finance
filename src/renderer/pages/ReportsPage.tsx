@@ -3,8 +3,10 @@ import { Button, Card, Col, DatePicker, Row, Space, Statistic, Table, Tabs, mess
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
+import { useDefaultPageSize } from '@/renderer/hooks/useDefaultPageSize';
 import { reportApi } from '@/renderer/api/reportApi';
 import { formatYuan } from '@/renderer/utils/money';
+import { pageSizeOptions } from '@/shared/constants/pagination';
 import type {
   AccountBalanceReportItem,
   CustomerReceivableReportItem,
@@ -18,6 +20,7 @@ export function ReportsPage() {
   const [report, setReport] = useState<ReportBundle | null>(null);
   const [loading, setLoading] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();
+  const defaultTablePageSize = useDefaultPageSize();
 
   async function load(nextMonth = month) {
     try {
@@ -100,7 +103,12 @@ export function ReportsPage() {
                       loading={loading}
                       dataSource={report.projectProfit}
                       columns={projectProfitColumns}
-                      pagination={{ pageSize: 10 }}
+                      pagination={{
+                        pageSize: defaultTablePageSize,
+                        showSizeChanger: true,
+                        pageSizeOptions: pageSizeOptions.map(String),
+                        showTotal: (count) => `共 ${count} 条`,
+                      }}
                       scroll={{ x: 'max-content' }}
                     />
                   ),
@@ -114,7 +122,12 @@ export function ReportsPage() {
                       loading={loading}
                       dataSource={report.customerReceivable}
                       columns={customerReceivableColumns}
-                      pagination={{ pageSize: 10 }}
+                      pagination={{
+                        pageSize: defaultTablePageSize,
+                        showSizeChanger: true,
+                        pageSizeOptions: pageSizeOptions.map(String),
+                        showTotal: (count) => `共 ${count} 条`,
+                      }}
                     />
                   ),
                 },

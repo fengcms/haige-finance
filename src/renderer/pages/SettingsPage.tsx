@@ -7,7 +7,9 @@ import { authApi } from '@/renderer/api/authApi';
 import { dictionaryApi } from '@/renderer/api/dictionaryApi';
 import { categoryApi, type Category } from '@/renderer/api/masterDataApi';
 import { maintenanceApi } from '@/renderer/api/maintenanceApi';
+import { settingsApi } from '@/renderer/api/settingsApi';
 import { categoryStatusLabels, categoryTypeLabels, fundTypeLabels, toOptions } from '@/renderer/utils/labels';
+import { pageSizeOptions, type PageSizeOption } from '@/shared/constants/pagination';
 import { dictionaryTypeLabels, dictionaryTypeOptions, type DictionaryType } from '@/shared/constants/dictionaries';
 import type { DictionaryItem } from '@/shared/types/dictionary';
 import type { MaintenanceInfo } from '@/shared/types/maintenance';
@@ -141,6 +143,11 @@ export function SettingsPage() {
             children: <SystemInfoPanel info={info} loadInfo={loadInfo} />,
           },
           {
+            key: 'ui',
+            label: '界面设置',
+            children: <UiSettings />,
+          },
+          {
             key: 'security',
             label: '安全设置',
             children: <SecuritySettings onPasswordChanged={handlePasswordChanged} />,
@@ -148,6 +155,75 @@ export function SettingsPage() {
         ]}
       />
     </Space>
+  );
+}
+
+function UiSettings() {
+  const [defaultPageSize, setDefaultPageSize] = useState<PageSizeOption>(20);
+  const [loading, setLoading] = useState(false);
+  const [messageApi, contextHolder] = message.useMessage();
+
+  async function loadSettings() {
+    try {
+      setLoading(true);
+      const settings = await settingsApi.get();
+      setDefaultPageSize(settings.defaultPageSize);
+    } catch (error) {
+      messageApi.error(error instanceof Error ? error.message : '界面设置加载失败');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function saveSettings() {
+    try {
+      setLoading(true);
+      const settings = await settingsApi.update({ defaultPageSize });
+      setDefaultPageSize(settings.defaultPageSize);
+      messageApi.success('界面设置已保存');
+    } catch (error) {
+      messageApi.error(error instanceof Error ? error.message : '界面设置保存失败');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadSettings();
+  }, []);
+
+  return (
+    <Card>
+      {contextHolder}
+      <Space direction="vertical" size="middle" className="page-stack">
+        <Typography.Title level={4} style={{ margin: 0 }}>
+          界面设置
+        </Typography.Title>
+        <Alert
+          type="info"
+          showIcon
+          message="默认每页条数会影响主要列表"
+          description="保存后，新打开或刷新后的客户、项目、合同、员工、供应商、账户、分类和财务流水列表会使用该默认值。表格右下角仍可临时切换每页条数。"
+        />
+        <Form layout="vertical" style={{ maxWidth: 360 }}>
+          <Form.Item label="默认每页条数">
+            <Select
+              value={defaultPageSize}
+              options={pageSizeOptions.map((value) => ({ value, label: `${value} 条 / 页` }))}
+              onChange={setDefaultPageSize}
+            />
+          </Form.Item>
+          <Space>
+            <Button onClick={loadSettings} loading={loading}>
+              重新加载
+            </Button>
+            <Button type="primary" onClick={saveSettings} loading={loading}>
+              保存设置
+            </Button>
+          </Space>
+        </Form>
+      </Space>
+    </Card>
   );
 }
 

@@ -11,7 +11,9 @@ import type { BackupResult, ExportResult, MaintenanceInfo, RestoreResult, UndoRe
 import type { PayrollBatch, PayrollBatchDetail, PayrollBatchListQuery, PayrollItem } from './payroll.js';
 import type { CustomerProject } from './project.js';
 import type { ProjectStatsDetail, ProjectStatsListItem } from './projectStats.js';
+import type { ProjectExpenseItem, ProjectExpenseOrder, ProjectExpenseOrderDetail, ProjectExpenseOrderListQuery } from './projectExpense.js';
 import type { ReportBundle, ReportQuery } from './report.js';
+import type { AppSettings, UpdateAppSettingsInput } from './settings.js';
 import type { Supplier } from './supplier.js';
 import type { AccountBalance, Transaction, TransactionListItem, TransactionListQuery } from './transaction.js';
 
@@ -41,8 +43,10 @@ export interface HaigeApi {
   categories: CrudApi<Category>;
   transactions: TransactionApi;
   payroll: PayrollApi;
+  projectExpenses: ProjectExpenseApi;
   projectStats: ProjectStatsApi;
   reports: ReportApi;
+  settings: SettingsApi;
   maintenance: MaintenanceApi;
 }
 
@@ -103,8 +107,27 @@ export interface ProjectStatsApi {
   detail: (projectId: string) => Promise<ApiResult<ProjectStatsDetail>>;
 }
 
+export interface ProjectExpenseApi {
+  listOrders: (query?: ProjectExpenseOrderListQuery) => Promise<ApiResult<ProjectExpenseOrder[]>>;
+  createOrder: (input: unknown) => Promise<ApiResult<ProjectExpenseOrder>>;
+  updateOrder: (id: string, input: unknown) => Promise<ApiResult<ProjectExpenseOrder>>;
+  removeOrder: (id: string) => Promise<ApiResult<{ id: string }>>;
+  getDetail: (id: string) => Promise<ApiResult<ProjectExpenseOrderDetail>>;
+  createItem: (input: unknown) => Promise<ApiResult<ProjectExpenseItem>>;
+  createItemsBatch: (input: unknown) => Promise<ApiResult<ProjectExpenseItem[]>>;
+  updateItem: (id: string, input: unknown) => Promise<ApiResult<ProjectExpenseItem>>;
+  removeItem: (id: string) => Promise<ApiResult<{ id: string }>>;
+  confirmOrder: (id: string, accountId: string) => Promise<ApiResult<ProjectExpenseOrder>>;
+  voidOrder: (id: string, reason: string) => Promise<ApiResult<ProjectExpenseOrder>>;
+}
+
 export interface ReportApi {
   get: (query?: ReportQuery) => Promise<ApiResult<ReportBundle>>;
+}
+
+export interface SettingsApi {
+  get: () => Promise<ApiResult<AppSettings>>;
+  update: (input: UpdateAppSettingsInput) => Promise<ApiResult<AppSettings>>;
 }
 
 export interface MaintenanceApi {

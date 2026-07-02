@@ -30,9 +30,11 @@ import type { InputNumberProps } from 'antd';
 import dayjs from 'dayjs';
 import { useEffect, useMemo, useState } from 'react';
 import { accountApi, employeeApi } from '@/renderer/api/masterDataApi';
+import { useDefaultPageSize } from '@/renderer/hooks/useDefaultPageSize';
 import { payrollApi } from '@/renderer/api/payrollApi';
 import { formatYuan, parseYuan } from '@/renderer/utils/money';
 import { payrollBatchStatusLabels, payrollOperationActionLabels, toOptions } from '@/renderer/utils/labels';
+import { pageSizeOptions } from '@/shared/constants/pagination';
 import type { Account } from '@/shared/types/account';
 import type { Employee } from '@/shared/types/employee';
 import type { PayrollBatch, PayrollBatchDetail, PayrollItem } from '@/shared/types/payroll';
@@ -108,6 +110,7 @@ export function PayrollPage() {
   const [editingBatch, setEditingBatch] = useState<PayrollBatch | null>(null);
   const [editingItem, setEditingItem] = useState<PayrollItem | null>(null);
   const [activeBatch, setActiveBatch] = useState<PayrollBatch | null>(null);
+  const defaultTablePageSize = useDefaultPageSize();
 
   async function loadBaseData() {
     const [accountResult, employeeResult] = await Promise.all([
@@ -649,7 +652,12 @@ export function PayrollPage() {
             loading={loading}
             columns={batchColumns}
             dataSource={items}
-            pagination={{ pageSize: 50, showTotal: (count) => `共 ${count} 条` }}
+            pagination={{
+              pageSize: defaultTablePageSize,
+              showSizeChanger: true,
+              pageSizeOptions: pageSizeOptions.map(String),
+              showTotal: (count) => `共 ${count} 条`,
+            }}
             scroll={{ x: 'max-content' }}
           />
         </Space>

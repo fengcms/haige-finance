@@ -1,5 +1,6 @@
 import type Database from 'better-sqlite3';
 import { getSqlite } from '../db/index.js';
+import { maxPageSize } from '../../shared/constants/pagination.js';
 import type { ListQuery, ListResult } from '../../shared/types/api.js';
 
 export type EntityName = 'customers' | 'projects' | 'contracts' | 'employees' | 'suppliers' | 'accounts' | 'categories';
@@ -149,7 +150,7 @@ export class MasterDataRepository {
   list(entityName: EntityName, query: ListQuery = {}): ListResult<Record<string, unknown>> {
     const config = entityConfigs[entityName];
     const page = Math.max(1, Number(query.page ?? 1));
-    const pageSize = Math.max(1, Math.min(100, Number(query.pageSize ?? 50)));
+    const pageSize = Math.max(1, Math.min(maxPageSize, Number(query.pageSize ?? 20)));
     const offset = (page - 1) * pageSize;
     const params: Record<string, unknown> = {
       limit: pageSize,

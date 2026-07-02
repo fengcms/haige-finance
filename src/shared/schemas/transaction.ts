@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { fundTypeOptions, transactionDirectionOptions, transactionStatusOptions } from '../constants/enums.js';
+import { maxPageSize } from '../constants/pagination.js';
 import { amountCentsSchema, baseEntitySchema, dateStringSchema, idSchema, nullableTextSchema } from './common.js';
 
 export const transactionSchema = baseEntitySchema.extend({
@@ -38,7 +39,7 @@ export const transactionListQuerySchema = z
   .object({
     keyword: z.string().optional(),
     page: z.number().int().min(1).optional(),
-    pageSize: z.number().int().min(1).max(100).optional(),
+    pageSize: z.number().int().min(1).max(maxPageSize).optional(),
     direction: z.enum(transactionDirectionOptions).optional(),
     status: z.enum(transactionStatusOptions).optional(),
     accountId: idSchema.optional(),

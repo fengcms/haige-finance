@@ -92,6 +92,12 @@ export const payrollBatchStatusLabels: Record<string, string> = {
   voided: '已作废',
 };
 
+export const projectExpenseOrderStatusLabels: Record<string, string> = {
+  draft: '草稿',
+  confirmed: '已确认',
+  voided: '已作废',
+};
+
 export const payrollOperationActionLabels: Record<string, string> = {
   create: '创建',
   update: '更新',

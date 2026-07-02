@@ -734,6 +734,92 @@ pnpm typecheck
 pnpm build
 ```
 
+---
+
+## 列表分页修复与默认分页配置
+
+### 问题背景
+
+多个列表页面虽然显示分页控件，但实际查询固定使用 `page: 1` 和较大的固定 `pageSize`，导致切换页码或每页条数时并不会真正加载下一页数据。不同页面还存在 `100`、`50`、`20`、`10` 等分散硬编码。
+
+### 已完成内容
+
+1. 新增共享分页常量：
+   - 默认每页 `20` 条
+   - 可选 `10 / 20 / 50 / 100`
+   - 最大每页 `100` 条
+2. 新增系统设置类型和 schema：
+   - `AppSettings`
+   - `UpdateAppSettingsInput`
+3. 新增 `SettingsService`，使用 `app_meta` 保存默认每页条数。
+4. 新增 Settings IPC：
+   - `settings:get`
+   - `settings:update`
+5. preload 暴露：
+   - `window.haige.settings`
+6. 新增 renderer API：
+   - `settingsApi`
+7. 新增 `useDefaultPageSize` hook。
+8. 系统设置新增“界面设置”栏目。
+9. 界面设置支持配置默认每页条数。
+10. `MasterDataPage` 改为真实服务端分页，影响：
+    - 客户管理
+    - 客户项目
+    - 合同管理
+    - 员工管理
+    - 供应商管理
+    - 账户管理
+    - 收支分类
+11. 财务管理流水列表改为真实服务端分页。
+12. 项目收支页费用单列表和项目流水列表接入默认分页条数。
+13. 工资批次列表接入默认分页条数。
+14. 报表中的项目利润表和客户应收表接入默认分页条数。
+15. 后端分页限制改为使用共享最大值。
+16. 新增 `pagination:smoke-test`，验证：
+    - 默认分页配置为 20
+    - 修改默认分页配置可持久化
+    - 基础资料分页 page 1 / page 2 不重叠
+    - 财务流水分页 page 1 / page 2 不重叠
+
+### 关键文件
+
+```text
+src/shared/constants/pagination.ts
+src/shared/types/settings.ts
+src/shared/schemas/settings.ts
+src/main/services/settingsService.ts
+src/main/ipc/settingsIpc.ts
+src/main/main.ts
+src/preload/index.cjs
+src/shared/types/app.ts
+src/renderer/api/settingsApi.ts
+src/renderer/hooks/useDefaultPageSize.ts
+src/renderer/pages/SettingsPage.tsx
+src/renderer/components/MasterDataPage.tsx
+src/renderer/pages/FinancePage.tsx
+src/renderer/pages/ProjectFinancePage.tsx
+src/renderer/pages/PayrollPage.tsx
+src/renderer/pages/ReportsPage.tsx
+scripts/pagination-smoke-test.mjs
+package.json
+USER_GUIDE.md
+STAGE_SUMMARY.md
+```
+
+### 验证方式
+
+```bash
+pnpm typecheck
+pnpm pagination:smoke-test
+pnpm build
+```
+
+### 当前说明
+
+1. 基础资料和财务流水已做真实服务端分页。
+2. 工资、项目收支和报表部分列表目前仍是前端分页，但默认条数和切换体验已统一。
+3. 详情内的小表格、附件列表和录入中的草稿表格暂不强制分页，以保证操作体验。
+
 ### 验证结果
 
 1. TypeScript 类型检查通过。
@@ -2374,3 +2460,207 @@ pnpm verify
 ---
 
 下一步建议进入“项目收支阶段三：项目成本明细化”，将项目费用单关联供应商。
+
+---
+
+## 项目收支阶段三 A：项目费用单与成本明细
+
+### 阶段目标
+
+在项目收支页面中新增不含附件的项目费用单能力，用于记录材料、人工、运输、安装、维修返工和其他项目支出的多条明细，并在确认后生成项目支出财务流水。
+
+本阶段按用户要求暂不开发附件上传，附件、票据、图片转 PDF 留到下一阶段单独规划和开发。
+
+### 已完成内容
+
+1. 新增项目费用单共享枚举：
+   - `projectExpenseTypeOptions`
+   - `projectExpenseOrderStatusOptions`
+   - `projectExpenseOperationActionOptions`
+2. 新增项目费用单共享类型：
+   - `ProjectExpenseOrder`
+   - `ProjectExpenseItem`
+   - `ProjectExpenseOperationLog`
+   - `ProjectExpenseOrderDetail`
+3. 新增项目费用单 zod schema：
+   - 新增费用单
+   - 更新费用单
+   - 新增费用明细
+   - 更新费用明细
+   - 确认费用单
+   - 作废费用单
+4. SQLite 新增：
+   - `project_expense_orders`
+   - `project_expense_items`
+   - `project_expense_operation_logs`
+5. Drizzle schema 新增项目费用单相关表定义。
+6. 新增 `ProjectExpenseRepository`，负责费用单、明细和日志的数据访问。
+7. 新增 `ProjectExpenseService`，负责：
+   - 草稿费用单创建
+   - 明细金额计算
+   - 费用单合计重算
+   - 确认费用单生成财务流水
+   - 作废费用单联动作废财务流水
+   - 操作日志记录
+8. 新增 Project Expense IPC。
+9. preload 暴露：
+   - `window.haige.projectExpenses`
+10. renderer API 新增：
+    - `projectExpenseApi`
+11. 项目收支页面新增“项目费用单”区域。
+12. 支持新增费用单并关联供应商。
+13. 支持费用单详情抽屉。
+14. 支持新增费用明细。
+15. 支持确认费用单生成项目支出流水。
+16. 支持删除草稿费用单。
+17. 支持作废费用单，并联动作废已生成流水。
+18. `db:init-test` 增加项目费用单表和金额字段检查。
+19. 新增 `project-expense:smoke-test`。
+20. `pnpm verify` 纳入项目费用单 smoke test。
+21. 更新开发文档和用户手册。
+
+### 关键文件
+
+```text
+PROJECT_FINANCE_PLAN.md
+USER_GUIDE.md
+STAGE_SUMMARY.md
+DEVELOPMENT_GUIDE.md
+package.json
+
+src/shared/constants/enums.ts
+src/shared/types/projectExpense.ts
+src/shared/schemas/projectExpense.ts
+src/shared/types/app.ts
+
+src/main/db/migrations.ts
+src/main/db/schema.ts
+src/main/repositories/projectExpenseRepository.ts
+src/main/services/projectExpenseService.ts
+src/main/ipc/projectExpenseIpc.ts
+src/main/main.ts
+
+src/preload/index.cjs
+src/renderer/api/projectExpenseApi.ts
+src/renderer/pages/ProjectFinancePage.tsx
+
+scripts/db-init-test.mjs
+scripts/project-expense-smoke-test.mjs
+```
+
+### 验证方式
+
+```bash
+pnpm typecheck
+pnpm project-expense:smoke-test
+pnpm db:init-test
+pnpm verify
+```
+
+### 当前已知限制
+
+1. 本阶段不支持费用单附件上传。
+2. 本阶段不支持图片排序、图片转 PDF、票据预览。
+3. 本阶段费用单确认后不允许继续编辑明细，需要作废后重建。
+4. 项目费用单生成的是普通财务流水，因此仍沿用现有账户余额、项目统计和报表口径。
+
+### 下一步建议
+
+进入“项目收支阶段三 B：费用附件与票据”，先制定附件上传、图片排序、图片转 PDF 和预览打开的详细计划，再开始开发。
+
+---
+
+## 项目费用单状态字典补充
+
+### 问题背景
+
+项目费用单阶段三 A 完成后，项目费用单列表和详情中的状态直接显示 `draft`、`confirmed`、`voided` 英文编码，不符合日常使用习惯，也没有进入系统设置的字典配置。
+
+### 已完成内容
+
+1. 新增字典类型：
+   - `project_expense_order_status`
+2. 新增默认字典项：
+   - `draft`：草稿
+   - `confirmed`：已确认
+   - `voided`：已作废
+3. 扩展 SQLite `dictionary_items.dict_type` 约束，兼容旧数据库。
+4. 系统设置 / 字典设置中可选择“项目费用单状态”。
+5. 项目收支页面的费用单列表状态改为读取字典显示。
+6. 项目费用单详情抽屉状态改为读取字典显示。
+7. 新增中文 fallback，字典未加载时也不直接显示英文。
+8. 更新字典 smoke test，检查项目费用单状态默认种子。
+
+### 关键文件
+
+```text
+src/shared/constants/dictionaries.ts
+src/main/db/migrations.ts
+src/renderer/utils/labels.ts
+src/renderer/pages/ProjectFinancePage.tsx
+scripts/dictionary-smoke-test.mjs
+USER_GUIDE.md
+STAGE_SUMMARY.md
+```
+
+### 验证方式
+
+```bash
+pnpm typecheck
+pnpm dictionary:smoke-test
+pnpm db:init-test
+pnpm project-expense:smoke-test
+pnpm build
+```
+
+---
+
+## 项目费用单明细录入体验优化
+
+### 问题背景
+
+费用单详情中新增费用明细原来使用单条弹窗。材料、五金、运输等费用通常需要连续录入多条明细，一条一弹窗效率较低。
+
+### 已完成内容
+
+1. 费用单详情抽屉宽度调整为接近全屏，便于横向录入多列。
+2. 草稿费用单中新增“新增一行”按钮。
+3. 点击“新增一行”后，在详情抽屉内生成待保存明细行。
+4. 待保存明细支持表格内直接录入：
+   - 名称
+   - 规格
+   - 数量
+   - 单位
+   - 单价
+   - 备注
+5. 待保存明细实时计算行金额和待保存合计。
+6. 支持移除未保存行。
+7. 支持清空待保存明细。
+8. 支持“一次性保存”多条费用明细。
+9. Service 新增批量保存费用明细方法，并放在同一个数据库事务中。
+10. preload 新增：
+    - `window.haige.projectExpenses.createItemsBatch`
+11. 项目费用单 smoke test 改为覆盖批量保存明细链路。
+
+### 关键文件
+
+```text
+src/shared/schemas/projectExpense.ts
+src/main/services/projectExpenseService.ts
+src/main/ipc/projectExpenseIpc.ts
+src/preload/index.cjs
+src/shared/types/app.ts
+src/renderer/api/projectExpenseApi.ts
+src/renderer/pages/ProjectFinancePage.tsx
+scripts/project-expense-smoke-test.mjs
+USER_GUIDE.md
+STAGE_SUMMARY.md
+```
+
+### 验证方式
+
+```bash
+pnpm typecheck
+pnpm project-expense:smoke-test
+pnpm build
+```

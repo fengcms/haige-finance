@@ -17,6 +17,14 @@ if (customerStatusCount < 5) {
   throw new Error('Default customer status dictionary seed failed');
 }
 
+const projectExpenseStatusCount = db
+  .prepare("SELECT COUNT(*) AS count FROM dictionary_items WHERE dict_type = 'project_expense_order_status' AND deleted_at IS NULL")
+  .get().count;
+
+if (projectExpenseStatusCount !== 3) {
+  throw new Error(`Default project expense order status dictionary seed failed: ${projectExpenseStatusCount}`);
+}
+
 const target = db
   .prepare("SELECT * FROM dictionary_items WHERE dict_type = 'customer_status' AND code = 'potential' AND deleted_at IS NULL")
   .get();

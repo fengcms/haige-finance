@@ -14,6 +14,9 @@ import type {
   OperationAction,
   PayrollBatchStatus,
   PayrollOperationAction,
+  ProjectExpenseOperationAction,
+  ProjectExpenseOrderStatus,
+  ProjectExpenseType,
   ProjectStatus,
   ProjectType,
   SupplierStatus,
@@ -265,6 +268,68 @@ export const transactions = sqliteTable(
     employeeIdx: index('idx_transactions_employee_id').on(table.employeeId),
     statusIdx: index('idx_transactions_status').on(table.status),
     fundTypeIdx: index('idx_transactions_fund_type').on(table.fundType),
+  }),
+);
+
+export const projectExpenseOrders = sqliteTable(
+  'project_expense_orders',
+  {
+    id: text('id').primaryKey(),
+    customerId: text('customer_id').notNull().references(() => customers.id),
+    projectId: text('project_id').notNull().references(() => projects.id),
+    supplierId: text('supplier_id').references(() => suppliers.id),
+    expenseType: text('expense_type').$type<ProjectExpenseType>().notNull(),
+    occurredDate: text('occurred_date').notNull(),
+    accountId: text('account_id').references(() => accounts.id),
+    status: text('status').$type<ProjectExpenseOrderStatus>().notNull().default('draft'),
+    totalAmountCents: integer('total_amount_cents').notNull().default(0),
+    paidTransactionId: text('paid_transaction_id').references(() => transactions.id),
+    voidedAt: integer('voided_at'),
+    voidReason: text('void_reason'),
+    remark: text('remark'),
+    ...timestamps,
+  },
+  (table) => ({
+    projectIdx: index('idx_project_expense_orders_project_id').on(table.projectId),
+    supplierIdx: index('idx_project_expense_orders_supplier_id').on(table.supplierId),
+    statusIdx: index('idx_project_expense_orders_status').on(table.status),
+    expenseTypeIdx: index('idx_project_expense_orders_expense_type').on(table.expenseType),
+  }),
+);
+
+export const projectExpenseItems = sqliteTable(
+  'project_expense_items',
+  {
+    id: text('id').primaryKey(),
+    orderId: text('order_id').notNull().references(() => projectExpenseOrders.id),
+    name: text('name').notNull(),
+    spec: text('spec'),
+    quantity: integer('quantity').notNull().default(0),
+    unit: text('unit'),
+    unitPriceCents: integer('unit_price_cents').notNull().default(0),
+    amountCents: integer('amount_cents').notNull().default(0),
+    remark: text('remark'),
+    ...timestamps,
+  },
+  (table) => ({
+    orderIdx: index('idx_project_expense_items_order_id').on(table.orderId),
+  }),
+);
+
+export const projectExpenseOperationLogs = sqliteTable(
+  'project_expense_operation_logs',
+  {
+    id: text('id').primaryKey(),
+    orderId: text('order_id').notNull().references(() => projectExpenseOrders.id),
+    itemId: text('item_id').references(() => projectExpenseItems.id),
+    action: text('action').$type<ProjectExpenseOperationAction>().notNull(),
+    detail: text('detail'),
+    createdAt: integer('created_at').notNull(),
+  },
+  (table) => ({
+    orderIdx: index('idx_project_expense_operation_logs_order_id').on(table.orderId),
+    itemIdx: index('idx_project_expense_operation_logs_item_id').on(table.itemId),
+    actionIdx: index('idx_project_expense_operation_logs_action').on(table.action),
   }),
 );
 

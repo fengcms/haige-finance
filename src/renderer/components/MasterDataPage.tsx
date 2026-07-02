@@ -3,6 +3,8 @@ import { Button, Card, Form, Input, Modal, Popconfirm, Space, Table, message } f
 import type { ColumnsType } from 'antd/es/table';
 import type React from 'react';
 import { useEffect, useMemo, useState } from 'react';
+import { useDefaultPageSize } from '@/renderer/hooks/useDefaultPageSize';
+import { normalizePageSize, pageSizeOptions } from '@/shared/constants/pagination';
 import type { ListQuery, ListResult } from '@/shared/types/api';
 
 export interface FieldConfig {
@@ -44,15 +46,18 @@ export function MasterDataPage<T extends { id: string }>({
   const [items, setItems] = useState<T[]>([]);
   const [total, setTotal] = useState(0);
   const [keyword, setKeyword] = useState('');
+  const defaultPageSize = useDefaultPageSize();
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(defaultPageSize);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<T | null>(null);
   const [messageApi, contextHolder] = message.useMessage();
 
-  async function load(queryKeyword = keyword) {
+  async function load(queryKeyword = keyword, nextPage = page, nextPageSize = pageSize) {
     try {
       setLoading(true);
-      const result = await api.list({ keyword: queryKeyword, page: 1, pageSize: 100 });
+      const result = await api.list({ keyword: queryKeyword, page: nextPage, pageSize: nextPageSize });
       setItems(result.items);
       setTotal(result.total);
     } catch (error) {
@@ -63,8 +68,10 @@ export function MasterDataPage<T extends { id: string }>({
   }
 
   useEffect(() => {
-    void load('');
-  }, []);
+    setPage(1);
+    setPageSize(defaultPageSize);
+    void load(keyword, 1, defaultPageSize);
+  }, [defaultPageSize]);
 
   function syncFormValues() {
     if (editingItem) {
@@ -100,7 +107,7 @@ export function MasterDataPage<T extends { id: string }>({
       setOpen(false);
       setEditingItem(null);
       form.resetFields();
-      await load();
+      await load(keyword, page, pageSize);
     } catch (error) {
       messageApi.error(error instanceof Error ? error.message : '保存失败');
     }
@@ -110,7 +117,7 @@ export function MasterDataPage<T extends { id: string }>({
     try {
       await api.remove(id);
       messageApi.success('已删除');
-      await load();
+      await load(keyword, page, pageSize);
     } catch (error) {
       messageApi.error(error instanceof Error ? error.message : '删除失败');
     }
@@ -152,10 +159,14 @@ export function MasterDataPage<T extends { id: string }>({
             placeholder={`搜索${title}`}
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
-            onSearch={(value) => load(value)}
+            onSearch={(value) => {
+              setKeyword(value);
+              setPage(1);
+              void load(value, 1, pageSize);
+            }}
             style={{ width: 280 }}
           />
-          <Button icon={<ReloadOutlined />} onClick={() => load()}>
+          <Button icon={<ReloadOutlined />} onClick={() => load(keyword, page, pageSize)}>
             刷新
           </Button>
           <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
@@ -169,9 +180,18 @@ export function MasterDataPage<T extends { id: string }>({
           columns={tableColumns}
           dataSource={items}
           pagination={{
+            current: page,
             total,
-            pageSize: 100,
+            pageSize,
+            showSizeChanger: true,
+            pageSizeOptions: pageSizeOptions.map(String),
             showTotal: (count) => `共 ${count} 条`,
+            onChange: (nextPage, nextPageSize) => {
+              const normalizedPageSize = normalizePageSize(nextPageSize);
+              setPage(nextPage);
+              setPageSize(normalizedPageSize);
+              void load(keyword, nextPage, normalizedPageSize);
+            },
           }}
           scroll={{ x: 'max-content' }}
         />

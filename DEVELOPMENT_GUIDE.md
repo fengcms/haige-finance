@@ -35,7 +35,7 @@ pnpm dev
 开发日志中应看到类似输出：
 
 ```text
-[preload] haige api ready: true, version: 0.16.0
+[preload] haige api ready: true, version: 0.19.0
 ```
 
 ## 常用验证命令
@@ -49,11 +49,13 @@ pnpm db:init-test
 pnpm crud:smoke-test
 pnpm dictionary:smoke-test
 pnpm auth:smoke-test
+pnpm pagination:smoke-test
 pnpm contract-attachment:smoke-test
 pnpm supplier:smoke-test
 pnpm transaction:smoke-test
 pnpm payroll:smoke-test
 pnpm project-finance:smoke-test
+pnpm project-expense:smoke-test
 pnpm project-stats:smoke-test
 pnpm report:smoke-test
 pnpm backup:smoke-test

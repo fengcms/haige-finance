@@ -27,13 +27,52 @@ export const createCoreTablesSql = `
       'contract_status',
       'employee_status',
       'account_type',
-      'account_status'
+      'account_status',
+      'project_expense_order_status'
     )),
     CHECK (status IN ('active', 'inactive')),
     CHECK (is_system IN (0, 1)),
     CHECK (sort_order >= 0)
   );
 
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_dictionary_items_type_code ON dictionary_items(dict_type, code);
+  CREATE INDEX IF NOT EXISTS idx_dictionary_items_dict_type ON dictionary_items(dict_type);
+  CREATE INDEX IF NOT EXISTS idx_dictionary_items_status ON dictionary_items(status);
+
+  DROP TABLE IF EXISTS dictionary_items_new;
+  CREATE TABLE dictionary_items_new (
+    id TEXT PRIMARY KEY,
+    dict_type TEXT NOT NULL,
+    code TEXT NOT NULL,
+    name TEXT NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'active',
+    is_system INTEGER NOT NULL DEFAULT 1,
+    remark TEXT,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    deleted_at INTEGER,
+    CHECK (dict_type IN (
+      'customer_status',
+      'project_status',
+      'project_type',
+      'contract_status',
+      'employee_status',
+      'account_type',
+      'account_status',
+      'project_expense_order_status'
+    )),
+    CHECK (status IN ('active', 'inactive')),
+    CHECK (is_system IN (0, 1)),
+    CHECK (sort_order >= 0)
+  );
+  INSERT OR IGNORE INTO dictionary_items_new (
+    id, dict_type, code, name, sort_order, status, is_system, remark, created_at, updated_at, deleted_at
+  )
+  SELECT id, dict_type, code, name, sort_order, status, is_system, remark, created_at, updated_at, deleted_at
+  FROM dictionary_items;
+  DROP TABLE dictionary_items;
+  ALTER TABLE dictionary_items_new RENAME TO dictionary_items;
   CREATE UNIQUE INDEX IF NOT EXISTS idx_dictionary_items_type_code ON dictionary_items(dict_type, code);
   CREATE INDEX IF NOT EXISTS idx_dictionary_items_dict_type ON dictionary_items(dict_type);
   CREATE INDEX IF NOT EXISTS idx_dictionary_items_status ON dictionary_items(status);
@@ -289,6 +328,76 @@ export const createCoreTablesSql = `
   CREATE INDEX IF NOT EXISTS idx_transactions_employee_id ON transactions(employee_id);
   CREATE INDEX IF NOT EXISTS idx_transactions_status ON transactions(status);
   CREATE INDEX IF NOT EXISTS idx_transactions_fund_type ON transactions(fund_type);
+
+  CREATE TABLE IF NOT EXISTS project_expense_orders (
+    id TEXT PRIMARY KEY,
+    customer_id TEXT NOT NULL,
+    project_id TEXT NOT NULL,
+    supplier_id TEXT,
+    expense_type TEXT NOT NULL,
+    occurred_date TEXT NOT NULL,
+    account_id TEXT,
+    status TEXT NOT NULL DEFAULT 'draft',
+    total_amount_cents INTEGER NOT NULL DEFAULT 0,
+    paid_transaction_id TEXT,
+    voided_at INTEGER,
+    void_reason TEXT,
+    remark TEXT,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    deleted_at INTEGER,
+    FOREIGN KEY (customer_id) REFERENCES customers(id),
+    FOREIGN KEY (project_id) REFERENCES projects(id),
+    FOREIGN KEY (supplier_id) REFERENCES suppliers(id),
+    FOREIGN KEY (account_id) REFERENCES accounts(id),
+    FOREIGN KEY (paid_transaction_id) REFERENCES transactions(id),
+    CHECK (expense_type IN ('material', 'labor', 'transport', 'installation', 'repair', 'other')),
+    CHECK (occurred_date GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'),
+    CHECK (status IN ('draft', 'confirmed', 'voided')),
+    CHECK (total_amount_cents >= 0)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_project_expense_orders_project_id ON project_expense_orders(project_id);
+  CREATE INDEX IF NOT EXISTS idx_project_expense_orders_supplier_id ON project_expense_orders(supplier_id);
+  CREATE INDEX IF NOT EXISTS idx_project_expense_orders_status ON project_expense_orders(status);
+  CREATE INDEX IF NOT EXISTS idx_project_expense_orders_expense_type ON project_expense_orders(expense_type);
+
+  CREATE TABLE IF NOT EXISTS project_expense_items (
+    id TEXT PRIMARY KEY,
+    order_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    spec TEXT,
+    quantity REAL NOT NULL DEFAULT 0,
+    unit TEXT,
+    unit_price_cents INTEGER NOT NULL DEFAULT 0,
+    amount_cents INTEGER NOT NULL DEFAULT 0,
+    remark TEXT,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    deleted_at INTEGER,
+    FOREIGN KEY (order_id) REFERENCES project_expense_orders(id),
+    CHECK (quantity >= 0),
+    CHECK (unit_price_cents >= 0),
+    CHECK (amount_cents >= 0)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_project_expense_items_order_id ON project_expense_items(order_id);
+
+  CREATE TABLE IF NOT EXISTS project_expense_operation_logs (
+    id TEXT PRIMARY KEY,
+    order_id TEXT NOT NULL,
+    item_id TEXT,
+    action TEXT NOT NULL,
+    detail TEXT,
+    created_at INTEGER NOT NULL,
+    FOREIGN KEY (order_id) REFERENCES project_expense_orders(id),
+    FOREIGN KEY (item_id) REFERENCES project_expense_items(id),
+    CHECK (action IN ('create', 'update', 'delete', 'confirm', 'void'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_project_expense_operation_logs_order_id ON project_expense_operation_logs(order_id);
+  CREATE INDEX IF NOT EXISTS idx_project_expense_operation_logs_item_id ON project_expense_operation_logs(item_id);
+  CREATE INDEX IF NOT EXISTS idx_project_expense_operation_logs_action ON project_expense_operation_logs(action);
 
   CREATE TABLE IF NOT EXISTS payroll_batches (
     id TEXT PRIMARY KEY,

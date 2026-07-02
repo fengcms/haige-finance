@@ -6,6 +6,7 @@ export const dictionaryTypeOptions = [
   'employee_status',
   'account_type',
   'account_status',
+  'project_expense_order_status',
 ] as const;
 
 export type DictionaryType = (typeof dictionaryTypeOptions)[number];
@@ -28,6 +29,7 @@ export const dictionaryTypeLabels: Record<DictionaryType, string> = {
   employee_status: '员工状态',
   account_type: '账户类型',
   account_status: '账户状态',
+  project_expense_order_status: '项目费用单状态',
 };
 
 export const defaultDictionaryItems: DefaultDictionaryItem[] = [
@@ -69,4 +71,8 @@ export const defaultDictionaryItems: DefaultDictionaryItem[] = [
 
   { dictType: 'account_status', code: 'active', name: '启用', sortOrder: 10 },
   { dictType: 'account_status', code: 'inactive', name: '停用', sortOrder: 20 },
+
+  { dictType: 'project_expense_order_status', code: 'draft', name: '草稿', sortOrder: 10 },
+  { dictType: 'project_expense_order_status', code: 'confirmed', name: '已确认', sortOrder: 20 },
+  { dictType: 'project_expense_order_status', code: 'voided', name: '已作废', sortOrder: 30 },
 ];

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { maxPageSize } from '../../shared/constants/pagination.js';
 import type { ListQuery } from '../../shared/types/api.js';
 import { MasterDataService } from '../services/masterDataService.js';
 import type { EntityName } from '../repositories/masterDataRepository.js';
@@ -8,7 +9,7 @@ const listQuerySchema = z
   .object({
     keyword: z.string().optional(),
     page: z.number().int().min(1).optional(),
-    pageSize: z.number().int().min(1).max(100).optional(),
+    pageSize: z.number().int().min(1).max(maxPageSize).optional(),
   })
   .optional();
 

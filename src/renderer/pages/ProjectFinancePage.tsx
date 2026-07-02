@@ -1,19 +1,35 @@
 import { PlusOutlined, ReloadOutlined } from '@ant-design/icons';
-import { Button, Card, DatePicker, Form, Input, InputNumber, Modal, Select, Space, Statistic, Table, Tag, Typography, message } from 'antd';
+import { Button, Card, DatePicker, Drawer, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Statistic, Table, Tag, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { useEffect, useMemo, useState } from 'react';
-import { accountApi, employeeApi } from '@/renderer/api/masterDataApi';
+import { accountApi, employeeApi, supplierApi } from '@/renderer/api/masterDataApi';
+import { useDictionaries } from '@/renderer/hooks/useDictionaries';
+import { useDefaultPageSize } from '@/renderer/hooks/useDefaultPageSize';
+import { projectExpenseApi } from '@/renderer/api/projectExpenseApi';
 import { projectStatsApi } from '@/renderer/api/projectStatsApi';
 import { transactionApi } from '@/renderer/api/transactionApi';
 import { formatYuan, parseYuan } from '@/renderer/utils/money';
-import { fundTypeLabels, receiptStatusLabels, transactionDirectionLabels, transactionStatusLabels } from '@/renderer/utils/labels';
+import { fundTypeLabels, projectExpenseOrderStatusLabels, receiptStatusLabels, transactionDirectionLabels, transactionStatusLabels } from '@/renderer/utils/labels';
+import { pageSizeOptions } from '@/shared/constants/pagination';
 import type { Account } from '@/shared/types/account';
 import type { Employee } from '@/shared/types/employee';
+import type { Supplier } from '@/shared/types/supplier';
 import type { ProjectStatsDetail, ProjectStatsListItem } from '@/shared/types/projectStats';
+import type { ProjectExpenseItem, ProjectExpenseOrder, ProjectExpenseOrderDetail } from '@/shared/types/projectExpense';
 import type { TransactionListItem } from '@/shared/types/transaction';
 
 type QuickEntryType = 'receipt' | 'material' | 'labor' | 'transport' | 'installation' | 'repair' | 'other';
+
+interface ExpenseDraftItem {
+  rowId: string;
+  name: string;
+  spec?: string | null;
+  quantity: number;
+  unit?: string | null;
+  unitPriceCents: number;
+  remark?: string | null;
+}
 
 const quickEntryConfigs: Record<
   QuickEntryType,
@@ -119,12 +135,25 @@ export function ProjectFinancePage() {
   const [projects, setProjects] = useState<ProjectStatsListItem[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [expenseOrders, setExpenseOrders] = useState<ProjectExpenseOrder[]>([]);
+  const [expenseDetail, setExpenseDetail] = useState<ProjectExpenseOrderDetail | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<string>();
   const [detail, setDetail] = useState<ProjectStatsDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [quickType, setQuickType] = useState<QuickEntryType>('receipt');
   const [transactionTypeFilter, setTransactionTypeFilter] = useState<QuickEntryType | 'all'>('all');
+  const [expenseOpen, setExpenseOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [voidOpen, setVoidOpen] = useState(false);
+  const [expenseDraftItems, setExpenseDraftItems] = useState<ExpenseDraftItem[]>([]);
+  const [expenseForm] = Form.useForm();
+  const [confirmForm] = Form.useForm();
+  const [voidForm] = Form.useForm();
+  const dictionaries = useDictionaries(['project_expense_order_status']);
+  const expenseOrderStatusLabels = dictionaries.labels('project_expense_order_status', projectExpenseOrderStatusLabels);
+  const defaultTablePageSize = useDefaultPageSize();
 
   const selectedProject = useMemo(
     () => projects.find((project) => project.id === selectedProjectId) ?? null,
@@ -132,18 +161,21 @@ export function ProjectFinancePage() {
   );
 
   async function loadBaseData() {
-    const [projectResult, accountResult, employeeResult] = await Promise.all([
+    const [projectResult, accountResult, employeeResult, supplierResult] = await Promise.all([
       projectStatsApi.list(),
       accountApi.list({ page: 1, pageSize: 100 }),
       employeeApi.list({ page: 1, pageSize: 100 }),
+      supplierApi.list({ page: 1, pageSize: 100 }),
     ]);
     setProjects(projectResult);
     setAccounts(accountResult.items);
     setEmployees(employeeResult.items);
+    setSuppliers(supplierResult.items);
 
     if (!selectedProjectId && projectResult[0]) {
       setSelectedProjectId(projectResult[0].id);
       await loadDetail(projectResult[0].id);
+      await loadExpenseOrders(projectResult[0].id);
     }
   }
 
@@ -168,7 +200,16 @@ export function ProjectFinancePage() {
     setProjects(projectResult);
     if (projectId) {
       await loadDetail(projectId);
+      await loadExpenseOrders(projectId);
     }
+  }
+
+  async function loadExpenseOrders(projectId = selectedProjectId) {
+    if (!projectId) {
+      setExpenseOrders([]);
+      return;
+    }
+    setExpenseOrders(await projectExpenseApi.listOrders({ projectId }));
   }
 
   useEffect(() => {
@@ -180,6 +221,7 @@ export function ProjectFinancePage() {
   async function handleProjectChange(projectId: string) {
     setSelectedProjectId(projectId);
     await loadDetail(projectId);
+    await loadExpenseOrders(projectId);
   }
 
   function openQuickEntry(type: QuickEntryType) {
@@ -235,6 +277,137 @@ export function ProjectFinancePage() {
       await reloadAll(selectedProject.id);
     } catch (error) {
       messageApi.error(error instanceof Error ? error.message : '项目收支保存失败');
+    }
+  }
+
+  function openExpenseOrder() {
+    if (!selectedProject) {
+      messageApi.warning('请先选择项目');
+      return;
+    }
+    expenseForm.resetFields();
+    expenseForm.setFieldsValue({ occurredDate: dayjs(), expenseType: 'material' });
+    setExpenseOpen(true);
+  }
+
+  async function submitExpenseOrder() {
+    if (!selectedProject) return;
+    const values = await expenseForm.validateFields();
+    try {
+      const order = await projectExpenseApi.createOrder({
+        projectId: selectedProject.id,
+        supplierId: values.supplierId ?? null,
+        expenseType: values.expenseType,
+        occurredDate: values.occurredDate.format('YYYY-MM-DD'),
+        accountId: values.accountId ?? null,
+        remark: values.remark,
+      });
+      messageApi.success('项目费用单已创建');
+      setExpenseOpen(false);
+      await loadExpenseOrders(selectedProject.id);
+      await openExpenseDetail(order.id);
+    } catch (error) {
+      messageApi.error(error instanceof Error ? error.message : '创建费用单失败');
+    }
+  }
+
+  async function openExpenseDetail(id: string) {
+    setExpenseDetail(await projectExpenseApi.getDetail(id));
+    setExpenseDraftItems([]);
+  }
+
+  function addExpenseDraftItem() {
+    setExpenseDraftItems((items) => [
+      ...items,
+      {
+        rowId: crypto.randomUUID(),
+        name: '',
+        spec: null,
+        quantity: 1,
+        unit: '',
+        unitPriceCents: 0,
+        remark: null,
+      },
+    ]);
+  }
+
+  function updateExpenseDraftItem(rowId: string, field: keyof ExpenseDraftItem, value: unknown) {
+    setExpenseDraftItems((items) =>
+      items.map((item) =>
+        item.rowId === rowId
+          ? {
+              ...item,
+              [field]: field === 'quantity'
+                ? Number(value ?? 0)
+                : field === 'unitPriceCents'
+                  ? parseYuan(value as string | number | null)
+                  : value,
+            }
+          : item,
+      ),
+    );
+  }
+
+  async function submitExpenseDraftItems() {
+    if (!expenseDetail) return;
+
+    if (expenseDraftItems.length === 0) {
+      messageApi.warning('请先新增一行费用明细');
+      return;
+    }
+
+    const invalidIndex = expenseDraftItems.findIndex((item) => !item.name.trim());
+    if (invalidIndex >= 0) {
+      messageApi.warning(`第 ${invalidIndex + 1} 行明细名称不能为空`);
+      return;
+    }
+
+    try {
+      await projectExpenseApi.createItemsBatch({
+        orderId: expenseDetail.order.id,
+        items: expenseDraftItems.map((item) => ({
+          name: item.name,
+          spec: item.spec,
+          quantity: item.quantity,
+          unit: item.unit,
+          unitPriceCents: item.unitPriceCents,
+          remark: item.remark,
+        })),
+      });
+      messageApi.success(`已保存 ${expenseDraftItems.length} 条费用明细`);
+      setExpenseDraftItems([]);
+      await openExpenseDetail(expenseDetail.order.id);
+      await loadExpenseOrders(selectedProjectId);
+    } catch (error) {
+      messageApi.error(error instanceof Error ? error.message : '批量保存费用明细失败');
+    }
+  }
+
+  async function confirmExpenseOrder() {
+    if (!expenseDetail) return;
+    const values = await confirmForm.validateFields();
+    try {
+      await projectExpenseApi.confirmOrder(expenseDetail.order.id, values.accountId);
+      messageApi.success('费用单已确认并生成财务流水');
+      setConfirmOpen(false);
+      await reloadAll(selectedProjectId);
+      await openExpenseDetail(expenseDetail.order.id);
+    } catch (error) {
+      messageApi.error(error instanceof Error ? error.message : '确认费用单失败');
+    }
+  }
+
+  async function voidExpenseOrder() {
+    if (!expenseDetail) return;
+    const values = await voidForm.validateFields();
+    try {
+      await projectExpenseApi.voidOrder(expenseDetail.order.id, values.reason);
+      messageApi.success('费用单已作废');
+      setVoidOpen(false);
+      await reloadAll(selectedProjectId);
+      await openExpenseDetail(expenseDetail.order.id);
+    } catch (error) {
+      messageApi.error(error instanceof Error ? error.message : '作废费用单失败');
     }
   }
 
@@ -300,6 +473,134 @@ export function ProjectFinancePage() {
     [],
   );
 
+  const expenseOrderColumns = useMemo<ColumnsType<ProjectExpenseOrder>>(
+    () => [
+      { title: '日期', dataIndex: 'occurredDate', width: 110 },
+      { title: '类型', dataIndex: 'expenseType', width: 110, render: (value) => quickEntryConfigs[value as QuickEntryType]?.summaryLabel ?? value },
+      { title: '供应商', dataIndex: 'supplierName', width: 150, render: (value) => value || '-' },
+      { title: '金额', dataIndex: 'totalAmountCents', width: 120, align: 'right', render: (value) => formatYuan(Number(value)) },
+      {
+        title: '状态',
+        dataIndex: 'status',
+        width: 100,
+        render: (value) => (
+          <Tag color={value === 'confirmed' ? 'green' : value === 'voided' ? 'red' : 'default'}>
+            {expenseOrderStatusLabels[String(value)] ?? value}
+          </Tag>
+        ),
+      },
+      { title: '备注', dataIndex: 'remark', width: 180, render: (value) => value || '-' },
+      { title: '操作', width: 100, fixed: 'right', render: (_, record) => <Button type="text" onClick={() => openExpenseDetail(record.id)}>详情</Button> },
+    ],
+    [expenseOrderStatusLabels],
+  );
+
+  const expenseItemColumns = useMemo<ColumnsType<ProjectExpenseItem>>(
+    () => [
+      { title: '名称', dataIndex: 'name', width: 160 },
+      { title: '规格', dataIndex: 'spec', width: 120, render: (value) => value || '-' },
+      { title: '数量', dataIndex: 'quantity', width: 90 },
+      { title: '单位', dataIndex: 'unit', width: 80, render: (value) => value || '-' },
+      { title: '单价', dataIndex: 'unitPriceCents', width: 110, align: 'right', render: (value) => formatYuan(Number(value)) },
+      { title: '金额', dataIndex: 'amountCents', width: 110, align: 'right', render: (value) => formatYuan(Number(value)) },
+      { title: '备注', dataIndex: 'remark', render: (value) => value || '-' },
+    ],
+    [],
+  );
+
+  const expenseDraftTotalCents = useMemo(
+    () => expenseDraftItems.reduce((total, item) => total + Math.round(item.quantity * item.unitPriceCents), 0),
+    [expenseDraftItems],
+  );
+
+  const expenseDraftColumns = useMemo<ColumnsType<ExpenseDraftItem>>(
+    () => [
+      {
+        title: '名称',
+        dataIndex: 'name',
+        width: 170,
+        fixed: 'left',
+        render: (_, record) => (
+          <Input
+            placeholder="例如：板材"
+            value={record.name}
+            onChange={(event) => updateExpenseDraftItem(record.rowId, 'name', event.target.value)}
+          />
+        ),
+      },
+      {
+        title: '规格',
+        dataIndex: 'spec',
+        width: 130,
+        render: (_, record) => (
+          <Input value={record.spec ?? ''} onChange={(event) => updateExpenseDraftItem(record.rowId, 'spec', event.target.value)} />
+        ),
+      },
+      {
+        title: '数量',
+        dataIndex: 'quantity',
+        width: 110,
+        render: (_, record) => (
+          <InputNumber
+            min={0}
+            precision={2}
+            value={record.quantity}
+            onChange={(value) => updateExpenseDraftItem(record.rowId, 'quantity', value)}
+            style={{ width: '100%' }}
+          />
+        ),
+      },
+      {
+        title: '单位',
+        dataIndex: 'unit',
+        width: 100,
+        render: (_, record) => (
+          <Input value={record.unit ?? ''} onChange={(event) => updateExpenseDraftItem(record.rowId, 'unit', event.target.value)} />
+        ),
+      },
+      {
+        title: '单价（元）',
+        dataIndex: 'unitPriceCents',
+        width: 130,
+        render: (_, record) => (
+          <InputNumber
+            min={0}
+            precision={2}
+            value={record.unitPriceCents / 100}
+            onChange={(value) => updateExpenseDraftItem(record.rowId, 'unitPriceCents', value)}
+            style={{ width: '100%' }}
+          />
+        ),
+      },
+      {
+        title: '金额',
+        width: 120,
+        align: 'right',
+        render: (_, record) => formatYuan(Math.round(record.quantity * record.unitPriceCents)),
+      },
+      {
+        title: '备注',
+        dataIndex: 'remark',
+        width: 180,
+        render: (_, record) => (
+          <Input value={record.remark ?? ''} onChange={(event) => updateExpenseDraftItem(record.rowId, 'remark', event.target.value)} />
+        ),
+      },
+      {
+        title: '操作',
+        key: 'actions',
+        width: 90,
+        fixed: 'right',
+        render: (_, record) => (
+          <Button type="text" danger onClick={() => setExpenseDraftItems((items) => items.filter((item) => item.rowId !== record.rowId))}>
+            移除
+          </Button>
+        ),
+      },
+    ],
+    [],
+  );
+
   return (
     <Space direction="vertical" size="middle" className="page-stack">
       {contextHolder}
@@ -330,6 +631,27 @@ export function ProjectFinancePage() {
               </Button>
             ))}
           </Space>
+        </Space>
+      </Card>
+
+      <Card>
+        <Space direction="vertical" size="middle" className="page-stack">
+          <Space className="toolbar" wrap>
+            <Typography.Title level={5} style={{ margin: 0 }}>项目费用单</Typography.Title>
+            <Button type="primary" icon={<PlusOutlined />} disabled={!selectedProject} onClick={openExpenseOrder}>新增费用单</Button>
+          </Space>
+          <Table<ProjectExpenseOrder>
+            rowKey="id"
+            dataSource={expenseOrders}
+            columns={expenseOrderColumns}
+            pagination={{
+              pageSize: defaultTablePageSize,
+              showSizeChanger: true,
+              pageSizeOptions: pageSizeOptions.map(String),
+              showTotal: (count) => `共 ${count} 条`,
+            }}
+            scroll={{ x: 'max-content' }}
+          />
         </Space>
       </Card>
 
@@ -383,7 +705,12 @@ export function ProjectFinancePage() {
             loading={loading}
             dataSource={filteredTransactions}
             columns={columns}
-            pagination={{ pageSize: 20, showTotal: (count) => `共 ${count} 条` }}
+            pagination={{
+              pageSize: defaultTablePageSize,
+              showSizeChanger: true,
+              pageSizeOptions: pageSizeOptions.map(String),
+              showTotal: (count) => `共 ${count} 条`,
+            }}
             scroll={{ x: 'max-content' }}
           />
         </Space>
@@ -422,6 +749,95 @@ export function ProjectFinancePage() {
           <Form.Item name="remark" label="备注">
             <Input.TextArea rows={3} />
           </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal title="新增项目费用单" open={expenseOpen} okText="保存" cancelText="取消" onOk={submitExpenseOrder} onCancel={() => setExpenseOpen(false)} destroyOnHidden>
+        <Form form={expenseForm} layout="vertical" preserve={false}>
+          <Form.Item name="expenseType" label="费用类型" rules={[{ required: true, message: '请选择费用类型' }]}>
+            <Select options={quickEntryOptions.filter((item) => item.value !== 'receipt')} />
+          </Form.Item>
+          <Form.Item name="supplierId" label="供应商">
+            <Select allowClear showSearch optionFilterProp="label" options={suppliers.map((supplier) => ({ value: supplier.id, label: supplier.name }))} />
+          </Form.Item>
+          <Form.Item name="occurredDate" label="费用日期" rules={[{ required: true, message: '请选择费用日期' }]}>
+            <DatePicker allowClear={false} style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item name="accountId" label="计划付款账户">
+            <Select allowClear options={accounts.map((account) => ({ value: account.id, label: account.name }))} />
+          </Form.Item>
+          <Form.Item name="remark" label="备注"><Input.TextArea rows={3} /></Form.Item>
+        </Form>
+      </Modal>
+
+      <Drawer
+        title={expenseDetail ? `费用单详情：${quickEntryConfigs[expenseDetail.order.expenseType as QuickEntryType]?.summaryLabel}` : '费用单详情'}
+        open={Boolean(expenseDetail)}
+        width={`calc(100vw - 150px)`}
+        onClose={() => {
+          setExpenseDetail(null);
+          setExpenseDraftItems([]);
+        }}
+      >
+        {expenseDetail ? (
+          <Space direction="vertical" size="middle" className="page-stack">
+            <Space wrap>
+              <Tag>{expenseOrderStatusLabels[expenseDetail.order.status] ?? expenseDetail.order.status}</Tag>
+              <Tag>合计 {formatYuan(expenseDetail.order.totalAmountCents)}</Tag>
+              <Tag>供应商 {expenseDetail.order.supplierName || '-'}</Tag>
+            </Space>
+            <Space wrap>
+              <Button type="primary" icon={<PlusOutlined />} disabled={expenseDetail.order.status !== 'draft'} onClick={addExpenseDraftItem}>新增一行</Button>
+              <Button disabled={expenseDetail.order.status !== 'draft' || expenseDraftItems.length === 0} onClick={submitExpenseDraftItems}>一次性保存</Button>
+              <Button disabled={expenseDraftItems.length === 0} onClick={() => setExpenseDraftItems([])}>清空待保存</Button>
+              <Button disabled={expenseDetail.order.status !== 'draft'} onClick={() => {
+                confirmForm.setFieldsValue({ accountId: expenseDetail.order.accountId ?? accounts[0]?.id });
+                setConfirmOpen(true);
+              }}>确认生成流水</Button>
+              <Popconfirm title="确认删除这张草稿费用单？" disabled={expenseDetail.order.status !== 'draft'} onConfirm={async () => {
+                await projectExpenseApi.removeOrder(expenseDetail.order.id);
+                setExpenseDetail(null);
+                await loadExpenseOrders(selectedProjectId);
+              }}>
+                <Button danger disabled={expenseDetail.order.status !== 'draft'}>删除草稿</Button>
+              </Popconfirm>
+              <Button danger disabled={expenseDetail.order.status === 'voided'} onClick={() => setVoidOpen(true)}>作废</Button>
+            </Space>
+            {expenseDraftItems.length > 0 ? (
+              <Space direction="vertical" size="small" className="page-stack">
+                <Space wrap>
+                  <Typography.Title level={5} style={{ margin: 0 }}>待保存明细</Typography.Title>
+                  <Tag>新增 {expenseDraftItems.length} 行</Tag>
+                  <Tag color="blue">待保存合计 {formatYuan(expenseDraftTotalCents)}</Tag>
+                </Space>
+                <Table<ExpenseDraftItem>
+                  rowKey="rowId"
+                  dataSource={expenseDraftItems}
+                  columns={expenseDraftColumns}
+                  pagination={false}
+                  scroll={{ x: 'max-content' }}
+                />
+              </Space>
+            ) : null}
+            <Space direction="vertical" size="small" className="page-stack">
+              <Typography.Title level={5} style={{ margin: 0 }}>已保存明细</Typography.Title>
+              <Table<ProjectExpenseItem> rowKey="id" dataSource={expenseDetail.items} columns={expenseItemColumns} pagination={false} scroll={{ x: 'max-content' }} />
+            </Space>
+          </Space>
+        ) : null}
+      </Drawer>
+
+      <Modal title="确认费用单" open={confirmOpen} okText="确认" cancelText="取消" onOk={confirmExpenseOrder} onCancel={() => setConfirmOpen(false)} destroyOnHidden>
+        <Form form={confirmForm} layout="vertical" preserve={false}>
+          <Form.Item name="accountId" label="付款账户" rules={[{ required: true, message: '请选择付款账户' }]}>
+            <Select options={accounts.map((account) => ({ value: account.id, label: account.name }))} />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal title="作废费用单" open={voidOpen} okText="作废" cancelText="取消" onOk={voidExpenseOrder} onCancel={() => setVoidOpen(false)} destroyOnHidden>
+        <Form form={voidForm} layout="vertical" preserve={false}>
+          <Form.Item name="reason" label="作废原因" rules={[{ required: true, message: '请输入作废原因' }]}><Input.TextArea rows={3} /></Form.Item>
         </Form>
       </Modal>
     </Space>

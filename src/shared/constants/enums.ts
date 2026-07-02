@@ -67,3 +67,12 @@ export type PayrollBatchStatus = (typeof payrollBatchStatusOptions)[number];
 
 export const payrollOperationActionOptions = ['create', 'update', 'delete', 'confirm', 'cancel_confirm', 'pay', 'void', 'adjust'] as const;
 export type PayrollOperationAction = (typeof payrollOperationActionOptions)[number];
+
+export const projectExpenseTypeOptions = ['material', 'labor', 'transport', 'installation', 'repair', 'other'] as const;
+export type ProjectExpenseType = (typeof projectExpenseTypeOptions)[number];
+
+export const projectExpenseOrderStatusOptions = ['draft', 'confirmed', 'voided'] as const;
+export type ProjectExpenseOrderStatus = (typeof projectExpenseOrderStatusOptions)[number];
+
+export const projectExpenseOperationActionOptions = ['create', 'update', 'delete', 'confirm', 'void'] as const;
+export type ProjectExpenseOperationAction = (typeof projectExpenseOperationActionOptions)[number];

@@ -54,6 +54,9 @@ const requiredTables = [
   'payroll_batches',
   'payroll_items',
   'payroll_operation_logs',
+  'project_expense_orders',
+  'project_expense_items',
+  'project_expense_operation_logs',
   'operation_logs',
 ];
 
@@ -101,6 +104,9 @@ for (const [table, columnName] of [
   ['payroll_items', 'tax_cents'],
   ['payroll_items', 'gross_salary_cents'],
   ['payroll_items', 'net_salary_cents'],
+  ['project_expense_orders', 'total_amount_cents'],
+  ['project_expense_items', 'unit_price_cents'],
+  ['project_expense_items', 'amount_cents'],
 ]) {
   const column = assertColumn(table, columnName);
   if (!String(column.type).toUpperCase().includes('INTEGER')) {
@@ -134,6 +140,30 @@ for (const columnName of ['batch_id', 'employee_id', 'remark', 'deleted_at']) {
 
 for (const columnName of ['batch_id', 'item_id', 'action', 'detail', 'created_at']) {
   assertColumn('payroll_operation_logs', columnName);
+}
+
+for (const columnName of [
+  'customer_id',
+  'project_id',
+  'supplier_id',
+  'expense_type',
+  'occurred_date',
+  'account_id',
+  'status',
+  'paid_transaction_id',
+  'voided_at',
+  'void_reason',
+  'deleted_at',
+]) {
+  assertColumn('project_expense_orders', columnName);
+}
+
+for (const columnName of ['order_id', 'name', 'spec', 'quantity', 'unit', 'remark', 'deleted_at']) {
+  assertColumn('project_expense_items', columnName);
+}
+
+for (const columnName of ['order_id', 'item_id', 'action', 'detail', 'created_at']) {
+  assertColumn('project_expense_operation_logs', columnName);
 }
 
 const accountCount = defaultAccounts.filter((account) =>

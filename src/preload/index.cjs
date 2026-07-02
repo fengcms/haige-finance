@@ -1,6 +1,6 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
-const preloadVersion = '0.16.0';
+const preloadVersion = '0.19.0';
 const invoke = (channel, payload) => ipcRenderer.invoke(channel, payload);
 const crudApi = (namespace) => ({
   list: (query) => invoke(`${namespace}:list`, query),
@@ -60,12 +60,29 @@ contextBridge.exposeInMainWorld('haige', {
     payBatch: (input) => invoke('payroll:pay-batch', input),
     voidBatch: (id, reason) => invoke('payroll:void-batch', { id, reason }),
   },
+  projectExpenses: {
+    listOrders: (query) => invoke('project-expenses:list-orders', query),
+    createOrder: (input) => invoke('project-expenses:create-order', input),
+    updateOrder: (id, input) => invoke('project-expenses:update-order', { id, input }),
+    removeOrder: (id) => invoke('project-expenses:delete-order', { id }),
+    getDetail: (id) => invoke('project-expenses:get-detail', { id }),
+    createItem: (input) => invoke('project-expenses:create-item', input),
+    createItemsBatch: (input) => invoke('project-expenses:create-items-batch', input),
+    updateItem: (id, input) => invoke('project-expenses:update-item', { id, input }),
+    removeItem: (id) => invoke('project-expenses:delete-item', { id }),
+    confirmOrder: (id, accountId) => invoke('project-expenses:confirm-order', { id, accountId }),
+    voidOrder: (id, reason) => invoke('project-expenses:void-order', { id, reason }),
+  },
   projectStats: {
     list: () => invoke('project-stats:list'),
     detail: (projectId) => invoke('project-stats:detail', { projectId }),
   },
   reports: {
     get: (query) => invoke('reports:get', query),
+  },
+  settings: {
+    get: () => invoke('settings:get'),
+    update: (input) => invoke('settings:update', input),
   },
   maintenance: {
     info: () => invoke('maintenance:info'),

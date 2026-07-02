@@ -178,6 +178,83 @@ affectsProjectProfit = true
 5. 费用单确认后生成财务流水。
 6. 支持费用单作废，并联动作废财务流水。
 
-## 7. 当前建议
+### 阶段三 A：项目费用单与成本明细
 
-先完成第一阶段。第一阶段能显著改善项目记账体验，同时保持现有账务和报表口径稳定。
+本阶段先完成不含附件的项目费用单。
+
+#### 功能范围
+
+1. 新增项目费用单表、费用明细表和操作日志表。
+2. 项目费用单关联客户、项目、供应商、计划付款账户。
+3. 费用单支持费用类型：
+   - 材料费
+   - 人工费
+   - 运输费
+   - 安装费
+   - 维修返工
+   - 其他支出
+4. 费用单明细支持名称、规格、数量、单位、单价、金额和备注。
+5. 草稿费用单可以新增明细、删除明细、删除草稿。
+6. 确认费用单后生成财务流水。
+7. 已确认费用单作废时，联动作废对应财务流水。
+8. 作废费用单及其关联作废流水不参与项目统计和报表统计。
+9. 保留费用单操作日志。
+
+#### 记账口径
+
+材料费：
+
+```text
+direction = expense
+fundType = project_expense
+categoryId = category_project_material
+affectsReceivable = false
+affectsProjectProfit = true
+```
+
+人工费：
+
+```text
+direction = expense
+fundType = salary
+categoryId = category_salary
+affectsReceivable = false
+affectsProjectProfit = true
+```
+
+运输费、安装费、维修返工、其他支出：
+
+```text
+direction = expense
+fundType = project_expense
+categoryId = category_other_expense
+affectsReceivable = false
+affectsProjectProfit = true
+```
+
+#### 验收标准
+
+1. 项目收支页面可以新增费用单。
+2. 费用单可以关联供应商。
+3. 费用单详情可以新增多条明细并自动汇总合计。
+4. 草稿费用单不生成财务流水，不影响项目统计。
+5. 确认费用单后自动生成项目支出流水。
+6. 确认后项目支出和预计毛利正确变化。
+7. 作废费用单后关联流水同步作废，项目统计恢复。
+8. `pnpm project-expense:smoke-test` 通过。
+9. `pnpm verify` 通过。
+
+### 阶段三 B：费用附件与票据
+
+本阶段暂不实现附件。下一阶段单独规划：
+
+1. 费用单附件表。
+2. 上传图片或 PDF。
+3. 图片排序。
+4. 图片合并生成 PDF。
+5. 内置预览或调用系统默认工具打开。
+6. 票据附件软删除和本地文件状态检查。
+
+## 7. 当前状态
+
+已完成第一阶段、第二阶段、供应商基础资料，以及第三阶段 A 的项目费用单与成本明细。下一步建议先制定阶段三 B 的附件上传计划，再开发费用单附件。
