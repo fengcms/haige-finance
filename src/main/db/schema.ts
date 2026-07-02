@@ -14,6 +14,7 @@ import type {
   OperationAction,
   PayrollBatchStatus,
   PayrollOperationAction,
+  ProjectExpenseAttachmentSourceType,
   ProjectExpenseOperationAction,
   ProjectExpenseOrderStatus,
   ProjectExpenseType,
@@ -294,6 +295,26 @@ export const projectExpenseOrders = sqliteTable(
     supplierIdx: index('idx_project_expense_orders_supplier_id').on(table.supplierId),
     statusIdx: index('idx_project_expense_orders_status').on(table.status),
     expenseTypeIdx: index('idx_project_expense_orders_expense_type').on(table.expenseType),
+  }),
+);
+
+export const projectExpenseAttachments = sqliteTable(
+  'project_expense_attachments',
+  {
+    id: text('id').primaryKey(),
+    orderId: text('order_id')
+      .notNull()
+      .references(() => projectExpenseOrders.id),
+    sourceType: text('source_type').$type<ProjectExpenseAttachmentSourceType>().notNull(),
+    originalName: text('original_name').notNull(),
+    storedName: text('stored_name').notNull(),
+    storedPath: text('stored_path').notNull(),
+    mimeType: text('mime_type').notNull(),
+    ...timestamps,
+  },
+  (table) => ({
+    orderIdx: index('idx_project_expense_attachments_order_id').on(table.orderId),
+    sourceTypeIdx: index('idx_project_expense_attachments_source_type').on(table.sourceType),
   }),
 );
 

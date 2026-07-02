@@ -1,6 +1,6 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
-const preloadVersion = '0.19.0';
+const preloadVersion = '0.20.0';
 const invoke = (channel, payload) => ipcRenderer.invoke(channel, payload);
 const crudApi = (namespace) => ({
   list: (query) => invoke(`${namespace}:list`, query),
@@ -72,6 +72,14 @@ contextBridge.exposeInMainWorld('haige', {
     removeItem: (id) => invoke('project-expenses:delete-item', { id }),
     confirmOrder: (id, accountId) => invoke('project-expenses:confirm-order', { id, accountId }),
     voidOrder: (id, reason) => invoke('project-expenses:void-order', { id, reason }),
+  },
+  projectExpenseAttachments: {
+    list: (orderId) => invoke('project-expense-attachments:list', orderId),
+    importFiles: (orderId) => invoke('project-expense-attachments:import-files', { orderId }),
+    createFromDataUrl: (orderId, dataUrl, originalName) =>
+      invoke('project-expense-attachments:create-from-data-url', { orderId, dataUrl, originalName }),
+    preview: (id) => invoke('project-expense-attachments:preview', { id }),
+    remove: (id) => invoke('project-expense-attachments:delete', { id }),
   },
   projectStats: {
     list: () => invoke('project-stats:list'),

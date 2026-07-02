@@ -1,11 +1,13 @@
-import { PlusOutlined, ReloadOutlined } from '@ant-design/icons';
-import { Button, Card, DatePicker, Drawer, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Statistic, Table, Tag, Typography, message } from 'antd';
+import { FileImageOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import { Button, Card, DatePicker, Drawer, Form, Image, Input, InputNumber, Modal, Popconfirm, Select, Space, Statistic, Table, Tag, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { useEffect, useMemo, useState } from 'react';
+import { ImagePasteUpload } from '@/renderer/components/ImagePasteUpload';
 import { accountApi, employeeApi, supplierApi } from '@/renderer/api/masterDataApi';
 import { useDictionaries } from '@/renderer/hooks/useDictionaries';
 import { useDefaultPageSize } from '@/renderer/hooks/useDefaultPageSize';
+import { projectExpenseAttachmentApi } from '@/renderer/api/projectExpenseAttachmentApi';
 import { projectExpenseApi } from '@/renderer/api/projectExpenseApi';
 import { projectStatsApi } from '@/renderer/api/projectStatsApi';
 import { transactionApi } from '@/renderer/api/transactionApi';
@@ -17,6 +19,7 @@ import type { Employee } from '@/shared/types/employee';
 import type { Supplier } from '@/shared/types/supplier';
 import type { ProjectStatsDetail, ProjectStatsListItem } from '@/shared/types/projectStats';
 import type { ProjectExpenseItem, ProjectExpenseOrder, ProjectExpenseOrderDetail } from '@/shared/types/projectExpense';
+import type { ProjectExpenseAttachment, ProjectExpenseAttachmentPreview } from '@/shared/types/projectExpenseAttachment';
 import type { TransactionListItem } from '@/shared/types/transaction';
 
 type QuickEntryType = 'receipt' | 'material' | 'labor' | 'transport' | 'installation' | 'repair' | 'other';
@@ -138,6 +141,9 @@ export function ProjectFinancePage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [expenseOrders, setExpenseOrders] = useState<ProjectExpenseOrder[]>([]);
   const [expenseDetail, setExpenseDetail] = useState<ProjectExpenseOrderDetail | null>(null);
+  const [expenseAttachments, setExpenseAttachments] = useState<ProjectExpenseAttachment[]>([]);
+  const [attachmentPreview, setAttachmentPreview] = useState<ProjectExpenseAttachmentPreview | null>(null);
+  const [attachmentLoading, setAttachmentLoading] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<string>();
   const [detail, setDetail] = useState<ProjectStatsDetail | null>(null);
   const [loading, setLoading] = useState(false);
@@ -312,8 +318,69 @@ export function ProjectFinancePage() {
   }
 
   async function openExpenseDetail(id: string) {
-    setExpenseDetail(await projectExpenseApi.getDetail(id));
+    const [nextDetail, nextAttachments] = await Promise.all([
+      projectExpenseApi.getDetail(id),
+      projectExpenseAttachmentApi.list(id),
+    ]);
+    setExpenseDetail(nextDetail);
+    setExpenseAttachments(nextAttachments);
     setExpenseDraftItems([]);
+  }
+
+  async function loadExpenseAttachments(orderId = expenseDetail?.order.id) {
+    if (!orderId) {
+      setExpenseAttachments([]);
+      return;
+    }
+    setExpenseAttachments(await projectExpenseAttachmentApi.list(orderId));
+  }
+
+  async function pasteExpenseAttachment(dataUrl: string, originalName?: string) {
+    if (!expenseDetail) return;
+    try {
+      setAttachmentLoading(true);
+      await projectExpenseAttachmentApi.createFromDataUrl(expenseDetail.order.id, dataUrl, originalName);
+      messageApi.success('截图已上传');
+      await loadExpenseAttachments(expenseDetail.order.id);
+    } catch (error) {
+      messageApi.error(error instanceof Error ? error.message : '截图上传失败');
+    } finally {
+      setAttachmentLoading(false);
+    }
+  }
+
+  async function selectExpenseAttachment() {
+    if (!expenseDetail) return;
+    try {
+      setAttachmentLoading(true);
+      await projectExpenseAttachmentApi.importFiles(expenseDetail.order.id);
+      await loadExpenseAttachments(expenseDetail.order.id);
+    } catch (error) {
+      messageApi.error(error instanceof Error ? error.message : '图片上传失败');
+    } finally {
+      setAttachmentLoading(false);
+    }
+  }
+
+  async function previewExpenseAttachment(attachment: ProjectExpenseAttachment) {
+    try {
+      setAttachmentLoading(true);
+      setAttachmentPreview(await projectExpenseAttachmentApi.preview(attachment.id));
+    } catch (error) {
+      messageApi.error(error instanceof Error ? error.message : '图片预览失败');
+    } finally {
+      setAttachmentLoading(false);
+    }
+  }
+
+  async function removeExpenseAttachment(attachment: ProjectExpenseAttachment) {
+    try {
+      await projectExpenseAttachmentApi.remove(attachment.id);
+      messageApi.success('附件已删除');
+      await loadExpenseAttachments(attachment.orderId);
+    } catch (error) {
+      messageApi.error(error instanceof Error ? error.message : '附件删除失败');
+    }
   }
 
   function addExpenseDraftItem() {
@@ -601,6 +668,49 @@ export function ProjectFinancePage() {
     [],
   );
 
+  const expenseAttachmentColumns = useMemo<ColumnsType<ProjectExpenseAttachment>>(
+    () => [
+      {
+        title: '图片',
+        key: 'image',
+        width: 80,
+        render: () => <FileImageOutlined style={{ fontSize: 24 }} />,
+      },
+      {
+        title: '文件名',
+        dataIndex: 'originalName',
+        width: 260,
+        render: (value, record) => (
+          <Space direction="vertical" size={2}>
+            <Typography.Text>{value}</Typography.Text>
+            {!record.fileExists ? <Typography.Text type="danger">本地文件丢失</Typography.Text> : null}
+          </Space>
+        ),
+      },
+      { title: '来源', dataIndex: 'sourceType', width: 90, render: (value) => (value === 'pasted' ? '粘贴' : '选择') },
+      { title: '大小', dataIndex: 'fileSizeBytes', width: 100, render: (value) => formatFileSize(value) },
+      { title: '上传时间', dataIndex: 'createdAt', width: 160, render: (value) => dayjs(Number(value)).format('YYYY-MM-DD HH:mm') },
+      {
+        title: '操作',
+        key: 'actions',
+        width: 160,
+        render: (_, record) => (
+          <Space>
+            <Button type="link" disabled={!record.fileExists} onClick={() => previewExpenseAttachment(record)}>
+              预览
+            </Button>
+            <Popconfirm title="确认删除这张图片？" okText="删除" cancelText="取消" onConfirm={() => removeExpenseAttachment(record)}>
+              <Button type="link" danger>
+                删除
+              </Button>
+            </Popconfirm>
+          </Space>
+        ),
+      },
+    ],
+    [],
+  );
+
   return (
     <Space direction="vertical" size="middle" className="page-stack">
       {contextHolder}
@@ -777,6 +887,7 @@ export function ProjectFinancePage() {
         onClose={() => {
           setExpenseDetail(null);
           setExpenseDraftItems([]);
+          setExpenseAttachments([]);
         }}
       >
         {expenseDetail ? (
@@ -823,9 +934,40 @@ export function ProjectFinancePage() {
               <Typography.Title level={5} style={{ margin: 0 }}>已保存明细</Typography.Title>
               <Table<ProjectExpenseItem> rowKey="id" dataSource={expenseDetail.items} columns={expenseItemColumns} pagination={false} scroll={{ x: 'max-content' }} />
             </Space>
+            <Space direction="vertical" size="small" className="page-stack">
+              <Space className="toolbar" wrap>
+                <Typography.Title level={5} style={{ margin: 0 }}>附件图片</Typography.Title>
+                <Button onClick={() => loadExpenseAttachments()} loading={attachmentLoading}>刷新附件</Button>
+              </Space>
+              <ImagePasteUpload
+                disabled={expenseDetail.order.status === 'voided'}
+                loading={attachmentLoading}
+                onPasteImage={pasteExpenseAttachment}
+                onSelectImage={selectExpenseAttachment}
+              />
+              <Table<ProjectExpenseAttachment>
+                rowKey="id"
+                loading={attachmentLoading}
+                dataSource={expenseAttachments}
+                columns={expenseAttachmentColumns}
+                pagination={false}
+                scroll={{ x: 'max-content' }}
+              />
+            </Space>
           </Space>
         ) : null}
       </Drawer>
+
+      <Modal
+        title={attachmentPreview?.originalName ?? '图片预览'}
+        open={Boolean(attachmentPreview)}
+        footer={null}
+        width={760}
+        onCancel={() => setAttachmentPreview(null)}
+        destroyOnClose
+      >
+        {attachmentPreview ? <Image src={attachmentPreview.dataUrl} alt={attachmentPreview.originalName} width="100%" /> : null}
+      </Modal>
 
       <Modal title="确认费用单" open={confirmOpen} okText="确认" cancelText="取消" onOk={confirmExpenseOrder} onCancel={() => setConfirmOpen(false)} destroyOnHidden>
         <Form form={confirmForm} layout="vertical" preserve={false}>
@@ -866,4 +1008,20 @@ function getProjectFinanceType(transaction: TransactionListItem): QuickEntryType
   }
 
   return 'other';
+}
+
+function formatFileSize(value: unknown) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return '-';
+  }
+
+  if (value < 1024) {
+    return `${value} B`;
+  }
+
+  if (value < 1024 * 1024) {
+    return `${(value / 1024).toFixed(1)} KB`;
+  }
+
+  return `${(value / 1024 / 1024).toFixed(1)} MB`;
 }

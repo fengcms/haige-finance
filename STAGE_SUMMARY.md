@@ -2570,6 +2570,107 @@ pnpm verify
 
 ---
 
+## 项目收支阶段三 B：项目费用单图片附件
+
+### 阶段目标
+
+为项目费用单增加轻量图片附件能力，重点支持截图后直接粘贴上传，同时保留传统选择图片上传。
+
+本阶段不做 PDF、图片转 PDF、OCR、拖拽排序和供应商对账。
+
+### 已完成内容
+
+1. 新增项目费用单附件计划文档：
+   - `PROJECT_EXPENSE_IMAGE_ATTACHMENT_PLAN.md`
+2. 新增后续未完成事项参考文档：
+   - `FUTURE_WORK_REFERENCE.md`
+3. 新增附件来源枚举：
+   - `pasted`
+   - `selected`
+4. 新增项目费用单附件共享类型：
+   - `ProjectExpenseAttachment`
+   - `ProjectExpenseAttachmentPreview`
+5. 新增项目费用单附件 zod schema。
+6. SQLite 新增：
+   - `project_expense_attachments`
+7. Drizzle schema 新增项目费用单附件表定义。
+8. 新增 `ProjectExpenseAttachmentRepository`。
+9. 新增 `ProjectExpenseAttachmentService`，负责：
+   - 校验费用单状态
+   - 粘贴图片 data URL 保存为本地文件
+   - 选择图片复制到本地附件目录
+   - 图片预览 data URL
+   - 本地文件存在性检查
+   - 附件软删除
+10. 新增 Project Expense Attachment IPC。
+11. preload 暴露：
+    - `window.haige.projectExpenseAttachments`
+12. renderer API 新增：
+    - `projectExpenseAttachmentApi`
+13. 新增通用组件：
+    - `ImagePasteUpload`
+14. 项目费用单详情新增“附件图片”区域。
+15. 支持粘贴截图上传。
+16. 支持点击选择 JPG、PNG、WEBP 图片上传。
+17. 支持图片预览。
+18. 支持图片软删除。
+19. 已作废费用单禁止继续新增附件。
+20. `db:init-test` 增加项目费用单附件表结构检查。
+21. 新增 `project-expense-attachment:smoke-test`。
+22. `pnpm verify` 纳入项目费用单附件 smoke test。
+
+### 关键文件
+
+```text
+PROJECT_EXPENSE_IMAGE_ATTACHMENT_PLAN.md
+FUTURE_WORK_REFERENCE.md
+USER_GUIDE.md
+STAGE_SUMMARY.md
+DEVELOPMENT_GUIDE.md
+package.json
+
+src/shared/constants/enums.ts
+src/shared/types/projectExpenseAttachment.ts
+src/shared/schemas/projectExpenseAttachment.ts
+src/shared/types/app.ts
+
+src/main/db/migrations.ts
+src/main/db/schema.ts
+src/main/repositories/projectExpenseAttachmentRepository.ts
+src/main/services/projectExpenseAttachmentService.ts
+src/main/ipc/projectExpenseAttachmentIpc.ts
+src/main/main.ts
+
+src/preload/index.cjs
+src/renderer/api/projectExpenseAttachmentApi.ts
+src/renderer/components/ImagePasteUpload.tsx
+src/renderer/pages/ProjectFinancePage.tsx
+src/renderer/styles/global.css
+
+scripts/db-init-test.mjs
+scripts/project-expense-attachment-smoke-test.mjs
+```
+
+### 验证方式
+
+```bash
+pnpm typecheck
+pnpm db:init-test
+pnpm project-expense-attachment:smoke-test
+pnpm verify
+```
+
+### 当前已知限制
+
+1. 只支持 JPG、PNG、WEBP 图片。
+2. 单张图片最大 10MB。
+3. 暂不支持 PDF。
+4. 暂不支持图片转 PDF。
+5. 暂不支持 OCR 或发票验真。
+6. 附件删除为软删除，本地文件暂不物理删除。
+
+---
+
 ## 项目费用单状态字典补充
 
 ### 问题背景

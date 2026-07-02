@@ -16,6 +16,9 @@ export type ContractAttachmentFileType = (typeof contractAttachmentFileTypeOptio
 export const contractAttachmentSourceTypeOptions = ['uploaded', 'generated'] as const;
 export type ContractAttachmentSourceType = (typeof contractAttachmentSourceTypeOptions)[number];
 
+export const projectExpenseAttachmentSourceTypeOptions = ['pasted', 'selected'] as const;
+export type ProjectExpenseAttachmentSourceType = (typeof projectExpenseAttachmentSourceTypeOptions)[number];
+
 export const employeeStatusOptions = ['active', 'inactive', 'left'] as const;
 export type EmployeeStatus = (typeof employeeStatusOptions)[number];
 

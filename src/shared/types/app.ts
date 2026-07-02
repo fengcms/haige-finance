@@ -12,6 +12,7 @@ import type { PayrollBatch, PayrollBatchDetail, PayrollBatchListQuery, PayrollIt
 import type { CustomerProject } from './project.js';
 import type { ProjectStatsDetail, ProjectStatsListItem } from './projectStats.js';
 import type { ProjectExpenseItem, ProjectExpenseOrder, ProjectExpenseOrderDetail, ProjectExpenseOrderListQuery } from './projectExpense.js';
+import type { ProjectExpenseAttachment, ProjectExpenseAttachmentPreview } from './projectExpenseAttachment.js';
 import type { ReportBundle, ReportQuery } from './report.js';
 import type { AppSettings, UpdateAppSettingsInput } from './settings.js';
 import type { Supplier } from './supplier.js';
@@ -44,6 +45,7 @@ export interface HaigeApi {
   transactions: TransactionApi;
   payroll: PayrollApi;
   projectExpenses: ProjectExpenseApi;
+  projectExpenseAttachments: ProjectExpenseAttachmentApi;
   projectStats: ProjectStatsApi;
   reports: ReportApi;
   settings: SettingsApi;
@@ -119,6 +121,14 @@ export interface ProjectExpenseApi {
   removeItem: (id: string) => Promise<ApiResult<{ id: string }>>;
   confirmOrder: (id: string, accountId: string) => Promise<ApiResult<ProjectExpenseOrder>>;
   voidOrder: (id: string, reason: string) => Promise<ApiResult<ProjectExpenseOrder>>;
+}
+
+export interface ProjectExpenseAttachmentApi {
+  list: (orderId: string) => Promise<ApiResult<ProjectExpenseAttachment[]>>;
+  importFiles: (orderId: string) => Promise<ApiResult<ProjectExpenseAttachment[]>>;
+  createFromDataUrl: (orderId: string, dataUrl: string, originalName?: string) => Promise<ApiResult<ProjectExpenseAttachment>>;
+  preview: (id: string) => Promise<ApiResult<ProjectExpenseAttachmentPreview>>;
+  remove: (id: string) => Promise<ApiResult<{ id: string }>>;
 }
 
 export interface ReportApi {

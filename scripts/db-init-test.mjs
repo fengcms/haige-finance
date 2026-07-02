@@ -56,6 +56,7 @@ const requiredTables = [
   'payroll_operation_logs',
   'project_expense_orders',
   'project_expense_items',
+  'project_expense_attachments',
   'project_expense_operation_logs',
   'operation_logs',
 ];
@@ -160,6 +161,10 @@ for (const columnName of [
 
 for (const columnName of ['order_id', 'name', 'spec', 'quantity', 'unit', 'remark', 'deleted_at']) {
   assertColumn('project_expense_items', columnName);
+}
+
+for (const columnName of ['order_id', 'source_type', 'original_name', 'stored_name', 'stored_path', 'mime_type', 'deleted_at']) {
+  assertColumn('project_expense_attachments', columnName);
 }
 
 for (const columnName of ['order_id', 'item_id', 'action', 'detail', 'created_at']) {
